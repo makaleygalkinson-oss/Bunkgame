@@ -2,7 +2,7 @@
 
 console.log('🎮 Страница игры загружена');
 
-let currentDeviceId = null;
+let currentUserId = null;
 let playersCountInterval = null;
 let lastPlayersCount = -1; // Последнее известное количество игроков
 let playersChannel = null; // Канал для real-time обновлений
@@ -35,52 +35,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     console.log('✅ Supabase загружен');
     
-    // Получаем device_id
-    const deviceInfo = typeof getDeviceInfo === 'function' ? getDeviceInfo() : { device_id: null };
-    currentDeviceId = deviceInfo.device_id;
-    
-    if (!currentDeviceId) {
-        console.log('❌ Device ID не найден, возвращаем на главную');
-        window.location.href = 'index.html';
-        return;
-    }
-    
-    console.log('✅ Device ID получен:', currentDeviceId);
-    
-    // Проверяем, есть ли запись в ready_players
-    (async () => {
-        const { data: readyData } = await supabase
-            .from('ready_players')
-            .select('device_id')
-            .eq('device_id', currentDeviceId)
-            .maybeSingle();
-        
-        if (!readyData) {
-            console.log('ℹ️ Игрок не в игре, возвращаем на главную');
+    // Проверка авторизации
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (!session) {
+            // Если не авторизован - возвращаем на главную
+            console.log('❌ Пользователь не авторизован, возвращаем на главную');
             window.location.href = 'index.html';
-            return;
+        } else {
+            currentUserId = session.user.id;
+            console.log('✅ Пользователь авторизован:', session.user.email);
+            
+            // Проверяем lobby_id - если игрок не в лобби, возвращаем на главную
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('lobby_id')
+                .eq('id', currentUserId)
+                .maybeSingle();
+            
+            if (userError) {
+                console.error('❌ Ошибка проверки lobby_id:', userError);
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            if (!userData || userData.lobby_id === 0) {
+                console.log('ℹ️ Игрок не в лобби (lobby_id = 0), возвращаем на главную');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            console.log('🎮 Игрок в лобби (lobby_id =', userData.lobby_id, ')');
+            
+            // Убеждаемся, что запись игрока есть в ready_players
+            await ensurePlayerInGame();
+            
+            // Инициализируем игру
+            initGame();
         }
-        
-        console.log('🎮 Игрок в игре');
-        
-        // Убеждаемся, что запись игрока есть в ready_players
-        await ensurePlayerInGame();
-        
-        // Инициализируем игру
-        initGame();
-    })();
+    }).catch(err => {
+        console.error('❌ Ошибка проверки сессии:', err);
+        window.location.href = 'index.html';
+    });
 });
 
 // Убеждаемся, что запись игрока есть в ready_players
 async function ensurePlayerInGame() {
-    if (!currentDeviceId) return;
+    if (!currentUserId) return;
     
     try {
         // Проверяем, есть ли запись
         const { data, error } = await supabase
             .from('ready_players')
-            .select('device_id')
-            .eq('device_id', currentDeviceId)
+            .select('user_id')
+            .eq('user_id', currentUserId)
             .maybeSingle();
         
         if (error && error.code !== 'PGRST116') { // PGRST116 = not found, это нормально
@@ -96,11 +103,12 @@ async function ensurePlayerInGame() {
                 .from('ready_players')
                 .upsert([
                     {
+                        user_id: currentUserId,
                         device_id: deviceInfo.device_id,
                         ready_at: new Date().toISOString()
                     }
                 ], {
-                    onConflict: 'device_id'
+                    onConflict: 'user_id'
                 });
             
             if (insertError) {
@@ -134,7 +142,7 @@ function initGame() {
         // Увеличиваем интервал до 10 секунд, так как real-time должен обновлять мгновенно
         if (!playersCountInterval) {
             playersCountInterval = setInterval(() => {
-                if (currentDeviceId && !document.hidden) {
+                if (currentUserId && !document.hidden) {
                     updatePlayersCount(true); // silent = true для периодических обновлений
                     updatePlayersCards(true); // Обновляем карточки тоже
                 }
@@ -175,14 +183,14 @@ function setupExitButton() {
 async function exitFromLobby() {
     console.log('🚪 Функция exitFromLobby вызвана');
     
-    if (!currentDeviceId) {
-        console.log('ℹ️ Device ID не найден, просто перекидываем на главную');
+    if (!currentUserId) {
+        console.log('ℹ️ Пользователь не авторизован, просто перекидываем на главную');
         window.location.href = 'index.html';
         return;
     }
     
     try {
-        console.log('🚪 Выход из лобби для deviceId:', currentDeviceId);
+        console.log('🚪 Выход из лобби для userId:', currentUserId);
         
         // Отключаем кнопку выхода, чтобы предотвратить повторные нажатия
         const exitBtn = document.getElementById('exitGameBtn');
@@ -191,11 +199,23 @@ async function exitFromLobby() {
             exitBtn.textContent = 'Выход...';
         }
         
+        // Сбрасываем lobby_id = 0 для игрока
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ lobby_id: 0 })
+            .eq('id', currentUserId);
+        
+        if (updateError) {
+            console.error('❌ Ошибка сброса lobby_id:', updateError);
+        } else {
+            console.log('✅ lobby_id сброшен на 0');
+        }
+        
         // Удаляем запись игрока из ready_players
         const { error } = await supabase
             .from('ready_players')
             .delete()
-            .eq('device_id', currentDeviceId);
+            .eq('user_id', currentUserId);
         
         if (error) {
             console.error('❌ Ошибка выхода из лобби:', error);
@@ -278,7 +298,7 @@ async function updatePlayersCards(silent = false) {
         // Получаем список всех игроков
         const { data: players, error } = await supabase
             .from('ready_players')
-            .select('device_id, ready_at')
+            .select('user_id, ready_at')
             .order('ready_at', { ascending: true });
 
         if (error) {
@@ -289,8 +309,8 @@ async function updatePlayersCards(silent = false) {
         }
 
         // Проверяем, изменился ли список игроков
-        const currentPlayersIds = players ? players.map(p => p.device_id).sort().join(',') : '';
-        const lastPlayersIds = lastPlayersList ? lastPlayersList.map(p => p.device_id).sort().join(',') : '';
+        const currentPlayersIds = players ? players.map(p => p.user_id).sort().join(',') : '';
+        const lastPlayersIds = lastPlayersList ? lastPlayersList.map(p => p.user_id).sort().join(',') : '';
         
         // Если список не изменился - не обновляем карточки (предотвращаем моргание)
         if (currentPlayersIds === lastPlayersIds && lastPlayersList !== null) {
@@ -321,18 +341,30 @@ async function updatePlayersCards(silent = false) {
             return;
         }
 
+        // Получаем информацию о пользователях из таблицы users
+        const userIds = players.map(p => p.user_id);
+        const { data: usersData, error: usersError } = await supabase
+            .from('users')
+            .select('id, email, name')
+            .in('id', userIds);
+
+        if (usersError && !silent) {
+            console.error('Ошибка получения данных пользователей:', usersError);
+        }
+
         // Создаем карточки для каждого игрока
         players.forEach((player, index) => {
-            const playerName = `Игрок ${index + 1}`;
-            const deviceIdShort = player.device_id ? player.device_id.substring(0, 8) : '';
+            const userData = usersData?.find(u => u.id === player.user_id);
+            const playerName = userData?.name || userData?.email || `Игрок ${index + 1}`;
+            const playerEmail = userData?.email || '';
 
             const card = document.createElement('div');
             card.className = 'player-card';
-            card.setAttribute('data-device-id', player.device_id); // Добавляем data-атрибут для идентификации
+            card.setAttribute('data-user-id', player.user_id); // Добавляем data-атрибут для идентификации
             card.innerHTML = `
                 <div class="player-card-header">
                     <div class="player-card-name">${playerName}</div>
-                    <div class="player-card-info">${deviceIdShort}</div>
+                    <div class="player-card-info">${playerEmail}</div>
                 </div>
                 <div class="player-card-content">
                     <p class="player-card-placeholder">Информация об игроке появится здесь</p>

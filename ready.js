@@ -1,7 +1,7 @@
 // Управление готовностью игроков с real-time обновлением
 
 let readyChannel = null;
-let currentDeviceId = null;
+let currentUserId = null;
 let isReady = false;
 let isAdmin = false; // Флаг для проверки админа
 
@@ -9,20 +9,103 @@ let isAdmin = false; // Флаг для проверки админа
 function initReadySystem() {
     console.log('🔧 Инициализация системы готовности...');
     
-    // Получаем device_id
-    const deviceInfo = typeof getDeviceInfo === 'function' ? getDeviceInfo() : { device_id: null };
-    currentDeviceId = deviceInfo.device_id;
-    
     // Показываем кнопку всем
     showReadySection();
     setupReadySystem();
     
-    updateReadyCountVisibility(); // Показываем счётчик
-    subscribeToReadyUpdates();
-    // Проверяем статус готовности (это обновит кнопку Ready)
-    checkCurrentReadyStatus();
-    // Проверяем админа для показа кнопки START GAME
-    checkAdminForStartButton();
+    // Проверяем авторизацию
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (session && session.user) {
+            currentUserId = session.user.id;
+            console.log('✅ Пользователь авторизован');
+            
+            // Проверяем lobby_id - если игрок в лобби, перекидываем на game.html
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('lobby_id')
+                .eq('id', currentUserId)
+                .maybeSingle();
+            
+            if (!userError && userData && userData.lobby_id > 0) {
+                console.log('🎮 Игрок в лобби (lobby_id =', userData.lobby_id, '), перекидываем на game.html');
+                window.location.href = 'game.html';
+                return;
+            }
+            
+            updateReadyCountVisibility(); // Показываем счётчик
+            subscribeToReadyUpdates();
+            // Проверяем статус готовности (это обновит кнопку Ready)
+            await checkCurrentReadyStatus();
+            // Проверяем админа для показа кнопки START GAME
+            await checkAdminForStartButton();
+        } else {
+            console.log('ℹ️ Пользователь не авторизован');
+            updateReadyCountVisibility(); // Скрываем счётчик
+            hideStartGameButton();
+        }
+    }).catch(err => {
+        console.error('❌ Ошибка проверки сессии:', err);
+        updateReadyCountVisibility(); // Скрываем счётчик при ошибке
+    });
+
+    // Отслеживание изменений авторизации
+    supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('🔄 Изменение авторизации:', event);
+        if (event === 'SIGNED_IN' && session) {
+            currentUserId = session.user.id;
+            console.log('✅ Вход выполнен');
+            
+            // Проверяем lobby_id - если игрок в лобби, перекидываем на game.html
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('lobby_id')
+                .eq('id', currentUserId)
+                .maybeSingle();
+            
+            if (!userError && userData && userData.lobby_id > 0) {
+                console.log('🎮 Игрок в лобби (lobby_id =', userData.lobby_id, '), перекидываем на game.html');
+                window.location.href = 'game.html';
+                return;
+            }
+            
+            updateReadyCountVisibility(); // Показываем счётчик
+            subscribeToReadyUpdates();
+            // Проверяем статус готовности (это обновит кнопку Ready)
+            await checkCurrentReadyStatus();
+            // Проверяем админа для показа кнопки START GAME
+            await checkAdminForStartButton();
+        } else if (event === 'SIGNED_OUT') {
+            currentUserId = null;
+            isReady = false;
+            isAdmin = false;
+            updateReadyButton(false);
+            updateReadyCountVisibility(); // Скрываем счётчик
+            hideStartGameButton();
+            console.log('👋 Выход выполнен');
+            if (readyChannel) {
+                try {
+                    supabase.removeChannel(readyChannel);
+                } catch (e) {
+                    // Игнорируем ошибки при удалении канала
+                }
+                readyChannel = null;
+            }
+            // Удаляем канал сигналов начала игры
+            if (window.gameStartListener) {
+                try {
+                    supabase.removeChannel(window.gameStartListener);
+                } catch (e) {
+                    // Игнорируем ошибки
+                }
+                window.gameStartListener = null;
+            }
+            // Останавливаем периодическое обновление
+            if (window.readyCountInterval) {
+                clearInterval(window.readyCountInterval);
+                window.readyCountInterval = null;
+            }
+        }
+    });
 }
 
 // Показать секцию готовности (всегда показываем, даже неавторизованным)
@@ -42,8 +125,13 @@ function showReadySection() {
 function updateReadyCountVisibility() {
     const countEl = document.getElementById('readyCount');
     if (countEl) {
-        // Показываем счётчик всегда
-        countEl.style.display = 'block';
+        if (currentUserId) {
+            // Показываем счётчик только для авторизованных
+            countEl.style.display = 'block';
+        } else {
+            // Скрываем для неавторизованных
+            countEl.style.display = 'none';
+        }
     }
 }
 
@@ -68,6 +156,12 @@ function setupReadySystem() {
 
     // Обработчик нажатия на кнопку Ready
     readyBtn.addEventListener('click', async () => {
+        // Если не авторизован - показываем сообщение и открываем окно входа
+        if (!currentUserId) {
+            showAuthRequiredMessage();
+            return;
+        }
+        
         // Позволяем переключать статус готовности
         await toggleReadyStatus();
     });
@@ -101,7 +195,7 @@ function setupReadySystem() {
 
     // Удаление статуса при выходе со страницы
     const removeOnExit = () => {
-        if (currentDeviceId && isReady) {
+        if (currentUserId && isReady) {
             // Пытаемся удалить асинхронно
             removeReadyStatus();
             // И синхронно на всякий случай
@@ -115,7 +209,7 @@ function setupReadySystem() {
     
     // Также при скрытии вкладки
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden && currentDeviceId && isReady) {
+        if (document.hidden && currentUserId && isReady) {
             // Не удаляем сразу, но помечаем для удаления при полном выходе
         }
     });
@@ -149,7 +243,7 @@ async function checkIfGameStarted() {
 
 // Проверка текущего статуса готовности
 async function checkCurrentReadyStatus() {
-    if (!currentDeviceId) return;
+    if (!currentUserId) return;
 
     try {
         // Проверяем статус готовности
@@ -158,7 +252,7 @@ async function checkCurrentReadyStatus() {
         const { data, error } = await supabase
             .from('ready_players')
             .select('*')
-            .eq('device_id', currentDeviceId)
+            .eq('user_id', currentUserId)
             .maybeSingle();
 
         if (error) {
@@ -195,7 +289,7 @@ async function checkCurrentReadyStatus() {
 
 // Переключение статуса готовности
 async function toggleReadyStatus() {
-    if (!currentDeviceId) return;
+    if (!currentUserId) return;
 
     try {
         if (isReady) {
@@ -203,7 +297,7 @@ async function toggleReadyStatus() {
             const { error } = await supabase
                 .from('ready_players')
                 .delete()
-                .eq('device_id', currentDeviceId);
+                .eq('user_id', currentUserId);
 
             if (error) {
                 // Тихо обрабатываем ошибки RLS
@@ -221,11 +315,12 @@ async function toggleReadyStatus() {
                 .from('ready_players')
                 .upsert([
                     {
+                        user_id: currentUserId,
                         device_id: deviceInfo.device_id,
                         ready_at: new Date().toISOString()
                     }
                 ], {
-                    onConflict: 'device_id'
+                    onConflict: 'user_id'
                 });
 
             if (error) {
@@ -245,13 +340,13 @@ async function toggleReadyStatus() {
 
 // Удаление статуса готовности (доступна глобально)
 async function removeReadyStatus() {
-    if (!currentDeviceId) return;
+    if (!currentUserId) return;
 
     try {
         const { error } = await supabase
             .from('ready_players')
             .delete()
-            .eq('device_id', currentDeviceId);
+            .eq('user_id', currentUserId);
         
         if (error) {
             // Тихо обрабатываем ошибки RLS
@@ -273,13 +368,36 @@ async function removeReadyStatus() {
 // Экспортируем функцию глобально
 window.removeReadyStatus = removeReadyStatus;
 
+// Показать сообщение о необходимости авторизации
+function showAuthRequiredMessage() {
+    const readySection = document.getElementById('readySection');
+    if (!readySection) return;
+    
+    let messageEl = document.getElementById('readyAuthMessage');
+    if (!messageEl) {
+        messageEl = document.createElement('div');
+        messageEl.id = 'readyAuthMessage';
+        messageEl.className = 'ready-auth-message';
+        readySection.insertBefore(messageEl, document.getElementById('readyBtn'));
+    }
+    
+    messageEl.textContent = 'Для участия в игре необходимо войти в аккаунт';
+    messageEl.style.display = 'block';
+    
+    setTimeout(() => {
+        if (messageEl) {
+            messageEl.style.display = 'none';
+        }
+    }, 4000);
+}
+
 // Синхронное удаление статуса (для beforeunload)
 function removeReadyStatusSync() {
-    if (!currentDeviceId) return;
+    if (!currentUserId) return;
 
     try {
         const xhr = new XMLHttpRequest();
-        const url = `${SUPABASE_URL}/rest/v1/ready_players?device_id=eq.${currentDeviceId}`;
+        const url = `${SUPABASE_URL}/rest/v1/ready_players?user_id=eq.${currentUserId}`;
         xhr.open('DELETE', url, false);
         xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
         xhr.setRequestHeader('Authorization', `Bearer ${SUPABASE_ANON_KEY}`);
@@ -305,8 +423,13 @@ async function updateReadyButton(ready) {
     readyBtn.classList.toggle('ready-active', ready);
 }
 
-// Обновление счётчика готовых игроков
+// Обновление счётчика готовых игроков (только для авторизованных)
 async function updateReadyCount() {
+    // Обновляем счётчик только если пользователь авторизован
+    if (!currentUserId) {
+        return;
+    }
+    
     try {
         const { count, error } = await supabase
             .from('ready_players')
@@ -355,11 +478,11 @@ function subscribeToReadyUpdates() {
                     // Мгновенное обновление счётчика при любых изменениях
                     updateReadyCount();
                     
-                    // Если это наше устройство, обновляем кнопку
-                    if (payload.new && payload.new.device_id === currentDeviceId) {
+                    // Если это наш пользователь, обновляем кнопку
+                    if (payload.new && payload.new.user_id === currentUserId) {
                         isReady = true;
                         updateReadyButton(true);
-                    } else if (payload.old && payload.old.device_id === currentDeviceId) {
+                    } else if (payload.old && payload.old.user_id === currentUserId) {
                         isReady = false;
                         updateReadyButton(false);
                     }
@@ -379,25 +502,25 @@ function subscribeToReadyUpdates() {
             .on('broadcast', { event: 'game_started' }, async (payload) => {
                 // Получен сигнал начала игры - перекидываем на страницу игры
                 console.log('🎮 Получен сигнал начала игры!', payload);
-                console.log('📊 Текущий статус:', { isReady, currentDeviceId });
+                console.log('📊 Текущий статус:', { isReady, currentUserId });
                 
                 // Сбрасываем статус готовности и деактивируем кнопку
                 isReady = false;
                 await updateReadyButton(false);
                 
                 // Проверяем, есть ли запись игрока в ready_players (игрок в игре)
-                if (currentDeviceId) {
-                    const { data } = await supabase
-                        .from('ready_players')
-                        .select('device_id')
-                        .eq('device_id', currentDeviceId)
+                if (currentUserId) {
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('lobby_id')
+                        .eq('id', currentUserId)
                         .maybeSingle();
                     
-                    if (data) {
-                        console.log('✅ Игрок в игре, перекидываем на game.html');
+                    if (userData && userData.lobby_id > 0) {
+                        console.log('✅ Игрок в лобби (lobby_id =', userData.lobby_id, '), перекидываем на game.html');
                         window.location.href = 'game.html';
                     } else {
-                        console.log('ℹ️ Игрок не в игре, не перекидываем');
+                        console.log('ℹ️ Игрок не в лобби, не перекидываем');
                     }
                 }
             })
@@ -422,7 +545,7 @@ function subscribeToReadyUpdates() {
         // Увеличиваем интервал до 2 секунд, чтобы не перегружать сервер
         if (!window.readyCountInterval) {
             window.readyCountInterval = setInterval(() => {
-                if (currentDeviceId && !document.hidden) {
+                if (currentUserId && !document.hidden) {
                     updateReadyCount();
                 }
             }, 2000);
@@ -431,8 +554,36 @@ function subscribeToReadyUpdates() {
 
 // Проверка админа для показа кнопки START GAME
 async function checkAdminForStartButton() {
-    // Админ-функциональность отключена
-    hideStartGameButton();
+    if (!currentUserId) {
+        hideStartGameButton();
+        return;
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('is_admin')
+            .eq('id', currentUserId)
+            .maybeSingle();
+        
+        if (!error && data) {
+            const adminValue = data.is_admin;
+            isAdmin = (typeof adminValue === 'boolean' && adminValue === true) ||
+                     (typeof adminValue === 'string' && (adminValue.toLowerCase() === 'true' || adminValue === '1')) ||
+                     (typeof adminValue === 'number' && adminValue === 1);
+            
+            if (isAdmin) {
+                showStartGameButton();
+            } else {
+                hideStartGameButton();
+            }
+        } else {
+            hideStartGameButton();
+        }
+    } catch (err) {
+        console.error('❌ Ошибка проверки админа:', err);
+        hideStartGameButton();
+    }
 }
 
 // Показать кнопку START GAME
@@ -535,13 +686,26 @@ async function sendGameStartBroadcast(channel, selectedRoles) {
     try {
         console.log('📤 Отправляем broadcast сообщение...');
         
-        // Получаем всех готовых игроков
+        // Получаем всех готовых игроков и устанавливаем им lobby_id = 1
         const { data: readyPlayers, error: playersError } = await supabase
             .from('ready_players')
-            .select('device_id');
+            .select('user_id');
         
-        if (playersError) {
-            console.error('❌ Ошибка получения готовых игроков:', playersError);
+        if (!playersError && readyPlayers && readyPlayers.length > 0) {
+            const userIds = readyPlayers.map(p => p.user_id);
+            console.log('🎮 Устанавливаем lobby_id = 1 для игроков:', userIds);
+            
+            // Устанавливаем lobby_id = 1 для всех готовых игроков
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ lobby_id: 1 })
+                .in('id', userIds);
+            
+            if (updateError) {
+                console.error('❌ Ошибка установки lobby_id:', updateError);
+            } else {
+                console.log('✅ lobby_id = 1 установлен для всех готовых игроков');
+            }
         }
         
         // Отправляем broadcast сообщение

@@ -13,6 +13,8 @@
 </head>
 <body>
     <div class="auth-buttons">
+        <button class="auth-btn" id="loginBtn">Войти</button>
+        <button class="auth-btn" id="registerBtn">Регистрация</button>
         <button class="auth-btn lobbies-btn" id="lobbiesBtn" title="Активные лобби">ЛОББИ</button>
     </div>
     <div class="visitor-counter">
@@ -76,6 +78,49 @@
         </div>
     </div>
 
+    <!-- Модальное окно регистрации -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeRegisterModal">&times;</span>
+            <h2 class="modal-title">Регистрация</h2>
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Пароль</label>
+                    <input type="password" id="registerPassword" name="password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="registerName">Имя</label>
+                    <input type="text" id="registerName" name="name" required>
+                </div>
+                <div class="form-message" id="registerMessage"></div>
+                <button type="submit" class="submit-btn">Зарегистрироваться</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно входа -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeLoginModal">&times;</span>
+            <h2 class="modal-title">Вход</h2>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Пароль</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+                <div class="form-message" id="loginMessage"></div>
+                <button type="submit" class="submit-btn">Войти</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Модальное окно с активными лобби -->
     <div class="modal" id="lobbiesModal">
@@ -126,6 +171,7 @@
     </div>
 
     <script src="supabase-config.js"></script>
+    <script src="auth.js"></script>
     <script src="ready.js"></script>
     <script src="counter.js"></script>
     <script src="lobbies.js"></script>

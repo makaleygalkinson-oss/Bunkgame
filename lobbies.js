@@ -1,19 +1,36 @@
 // Управление лобби
 
 let lobbiesChannel = null;
-let currentDeviceId = null;
+let currentUserId = null;
 
 // Инициализация системы лобби
 function initLobbiesSystem() {
     console.log('🔧 Инициализация системы лобби...');
     
-    // Получаем device_id
-    const deviceInfo = typeof getDeviceInfo === 'function' ? getDeviceInfo() : { device_id: null };
-    currentDeviceId = deviceInfo.device_id;
+    // Получаем текущего пользователя
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session && session.user) {
+            currentUserId = session.user.id;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = currentUserId;
+            }
+        }
+    });
     
-    if (typeof window !== 'undefined') {
-        window.currentDeviceId = currentDeviceId;
-    }
+    // Отслеживание изменений авторизации
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            currentUserId = session.user.id;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = currentUserId;
+            }
+        } else if (event === 'SIGNED_OUT') {
+            currentUserId = null;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = null;
+            }
+        }
+    });
     
     // Настройка кнопки и модального окна
     setupLobbiesModal();
@@ -120,7 +137,7 @@ async function updateLobbiesList() {
         // Лобби = группы игроков из ready_players, которые находятся в игре
         const { data: readyPlayers, error } = await supabase
             .from('ready_players')
-            .select('device_id, ready_at')
+            .select('user_id, ready_at')
             .order('ready_at', { ascending: true });
         
         if (error) {
@@ -144,13 +161,13 @@ async function updateLobbiesList() {
             const lobbyCard = document.createElement('div');
             lobbyCard.className = 'lobby-card';
             
-            const lobbyPlayers = lobby.players.map((deviceId, idx) => {
-                const shortId = deviceId ? deviceId.substring(0, 8) : '';
-                return `Игрок ${idx + 1} (${shortId})`;
+            const lobbyPlayers = lobby.players.map(playerId => {
+                const user = usersData?.find(u => u.id === playerId);
+                return user?.name || user?.email || 'Игрок';
             });
             
-            const deviceId = (typeof window !== 'undefined' && window.currentDeviceId) || currentDeviceId || null;
-            const isUserInLobby = deviceId && lobby.players.includes(deviceId);
+            const userId = (typeof window !== 'undefined' && window.currentUserId) || currentUserId || null;
+            const isUserInLobby = userId && lobby.players.includes(userId);
             
             lobbyCard.innerHTML = `
                 <div class="lobby-header">
@@ -198,7 +215,7 @@ function groupPlayersIntoLobbies(players) {
     // Создаем одно лобби со всеми игроками
     const lobby = {
         id: 'lobby_' + Date.now(),
-        players: players.map(p => p.device_id),
+        players: players.map(p => p.user_id),
         startTime: Math.min(...players.map(p => new Date(p.ready_at).getTime()))
     };
     
