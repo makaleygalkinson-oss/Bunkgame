@@ -720,7 +720,7 @@ body {
 }
 
 .game-content {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding-top: 2rem;
     text-align: center;
@@ -780,6 +780,93 @@ body {
     font-size: 0.9rem;
 }
 
+/* Контейнер с блоками игры */
+.game-blocks-container {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    justify-content: center;
+    margin: 2rem auto;
+    max-width: 1400px;
+}
+
+.game-left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    flex: 1;
+    max-width: 500px;
+}
+
+.game-right-column {
+    flex: 1;
+    max-width: 600px;
+}
+
+/* Блок "Секретная Информация о бункере" */
+.secret-info-block {
+    background: rgba(40, 40, 40, 0.8);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(150, 150, 150, 0.3);
+    border-radius: 20px;
+    padding: 2.5rem;
+    text-align: left;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    min-height: 400px;
+}
+
+.secret-info-title {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #ffaa00;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2rem;
+    text-align: center;
+    text-shadow: 0 0 30px rgba(255, 170, 0, 0.5);
+    border-bottom: 2px solid rgba(255, 170, 0, 0.3);
+    padding-bottom: 1rem;
+}
+
+.secret-info-content {
+    min-height: 250px;
+    color: #d0d0d0;
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+/* Блок "Голосование" */
+.voting-block {
+    background: rgba(40, 40, 40, 0.8);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(150, 150, 150, 0.3);
+    border-radius: 20px;
+    padding: 2.5rem;
+    text-align: left;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    min-height: 400px;
+}
+
+.voting-title {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #00aaff;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2rem;
+    text-align: center;
+    text-shadow: 0 0 30px rgba(0, 170, 255, 0.5);
+    border-bottom: 2px solid rgba(0, 170, 255, 0.3);
+    padding-bottom: 1rem;
+}
+
+.voting-content {
+    min-height: 250px;
+    color: #d0d0d0;
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
 /* Блок "Карточка бункера" */
 .bunker-card {
     background: rgba(40, 40, 40, 0.8);
@@ -787,11 +874,9 @@ body {
     border: 2px solid rgba(150, 150, 150, 0.3);
     border-radius: 20px;
     padding: 3rem;
-    margin: 2rem auto;
-    max-width: 900px;
-    min-height: 500px;
     text-align: left;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    min-height: 800px;
 }
 
 .bunker-card-title {
@@ -808,7 +893,7 @@ body {
 }
 
 .bunker-card-content {
-    min-height: 300px;
+    min-height: 600px;
     color: #d0d0d0;
     font-size: 1.1rem;
     line-height: 1.8;
@@ -1370,6 +1455,54 @@ body {
     .bunker-card-content {
         min-height: 250px;
         font-size: 1rem;
+    }
+    
+    /* Адаптивность для блоков игры */
+    .game-blocks-container {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 0 1rem;
+    }
+    
+    .game-left-column {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .game-right-column {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .secret-info-block,
+    .voting-block {
+        padding: 1.5rem;
+        min-height: 300px;
+    }
+    
+    .secret-info-title,
+    .voting-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .secret-info-content,
+    .voting-content {
+        min-height: 200px;
+        font-size: 1rem;
+    }
+    
+    .bunker-card {
+        padding: 2rem 1.5rem;
+        min-height: 500px;
+    }
+    
+    .bunker-card-title {
+        font-size: 2rem;
+    }
+    
+    .bunker-card-content {
+        min-height: 400px;
     }
     
     .lobby-card-header {
