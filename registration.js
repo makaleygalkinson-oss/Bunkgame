@@ -266,6 +266,14 @@ function initLoginForm() {
             // Проверяем, является ли пользователь админом из БД
             const isAdmin = user.is_admin === true || user.is_admin === 1;
             
+            // Обновляем last_seen при входе
+            await supabase
+                .from('users')
+                .update({ 
+                    last_seen: new Date().toISOString()
+                })
+                .eq('id', user.id);
+            
             // Сохраняем информацию о пользователе в sessionStorage
             sessionStorage.setItem('currentUser', JSON.stringify({
                 id: user.id,
@@ -283,6 +291,9 @@ function initLoginForm() {
             
             // Обновляем UI
             updateAuthUI(user);
+            
+            // Запускаем обновление last_seen
+            startLastSeenUpdates();
             
             // Перезагружаем страницу через небольшую задержку
             setTimeout(() => {
@@ -929,10 +940,10 @@ async function loadAdminPlayers() {
     try {
         playersList.innerHTML = '<p class="admin-loading">Загрузка игроков...</p>';
         
-        // Получаем всех пользователей
+        // Получаем всех пользователей с информацией о последней активности
         const { data: users, error: usersError } = await supabase
             .from('users')
-            .select('id, name, email, lobby_id');
+            .select('id, name, email, lobby_id, last_seen, updated_at');
         
         if (usersError) {
             console.error('Ошибка загрузки игроков:', usersError);
@@ -960,25 +971,42 @@ async function loadAdminPlayers() {
         // Очищаем список
         playersList.innerHTML = '';
         
+        // Определяем текущее время
+        const now = new Date();
+        const ONLINE_THRESHOLD = 30 * 1000; // 30 секунд в миллисекундах
+        
         // Создаем карточки для каждого игрока
         users.forEach((user) => {
             const playerCard = document.createElement('div');
             playerCard.className = 'admin-player-card';
             
+            // Определяем онлайн-статус
+            let isOnline = false;
+            let lastSeenDate = null;
+            
+            // Проверяем last_seen (если есть)
+            if (user.last_seen) {
+                lastSeenDate = new Date(user.last_seen);
+                const timeDiff = now - lastSeenDate;
+                isOnline = timeDiff <= ONLINE_THRESHOLD;
+            } else if (user.updated_at) {
+                // Если last_seen нет, используем updated_at как fallback
+                lastSeenDate = new Date(user.updated_at);
+                const timeDiff = now - lastSeenDate;
+                isOnline = timeDiff <= ONLINE_THRESHOLD;
+            }
+            
+            const onlineStatus = isOnline ? 'в сети' : 'не в сети';
+            
             // Определяем статус лобби
             let lobbyStatus = 'не в лобби';
             if (user.lobby_id) {
-                const lobby = lobbyMap[user.lobby_id];
-                if (lobby) {
-                    lobbyStatus = `lobby ${user.lobby_id}`;
-                } else {
-                    lobbyStatus = `lobby ${user.lobby_id}`;
-                }
+                lobbyStatus = `lobby ${user.lobby_id}`;
             }
             
             playerCard.innerHTML = `
                 <div class="admin-player-info">
-                    <span class="admin-player-text">${user.name || user.email} - в сети - ${lobbyStatus}</span>
+                    <span class="admin-player-text">${user.name || user.email} - ${onlineStatus} - ${lobbyStatus}</span>
                 </div>
                 <div class="admin-player-actions">
                     <button class="admin-mod-btn" data-user-id="${user.id}" data-user-name="${user.name || user.email}">
@@ -1020,13 +1048,92 @@ window.openAdminModal = openAdminModal;
 window.closeAdminModal = closeAdminModal;
 window.createLobby = createLobby;
 
+// Обновление last_seen для авторизованного пользователя
+let lastSeenUpdateTimer = null;
+const LAST_SEEN_DEBOUNCE = 5000; // Обновляем не чаще чем раз в 5 секунд
+
+async function updateUserLastSeen() {
+    const userStr = sessionStorage.getItem('currentUser');
+    if (!userStr) return;
+    
+    // Дебаунсинг - не обновляем слишком часто
+    if (lastSeenUpdateTimer) {
+        clearTimeout(lastSeenUpdateTimer);
+    }
+    
+    lastSeenUpdateTimer = setTimeout(async () => {
+        try {
+            const user = JSON.parse(userStr);
+            
+            // Обновляем last_seen в БД
+            const { error } = await supabase
+                .from('users')
+                .update({ 
+                    last_seen: new Date().toISOString()
+                })
+                .eq('id', user.id);
+            
+            if (error) {
+                console.error('Ошибка обновления last_seen:', error);
+            }
+        } catch (err) {
+            console.error('Ошибка обновления last_seen:', err);
+        }
+    }, LAST_SEEN_DEBOUNCE);
+}
+
+// Периодическое обновление last_seen для авторизованных пользователей
+let lastSeenUpdateInterval = null;
+let activityListenersAdded = false;
+
+function startLastSeenUpdates() {
+    // Обновляем сразу при загрузке
+    updateUserLastSeen();
+    
+    // Затем обновляем каждые 15 секунд
+    if (lastSeenUpdateInterval) {
+        clearInterval(lastSeenUpdateInterval);
+    }
+    
+    lastSeenUpdateInterval = setInterval(() => {
+        updateUserLastSeen();
+    }, 15000); // 15 секунд
+    
+    // Добавляем отслеживание активности пользователя (только один раз)
+    if (!activityListenersAdded) {
+        activityListenersAdded = true;
+        
+        // Отслеживаем различные виды активности
+        const activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+        activityEvents.forEach(eventType => {
+            document.addEventListener(eventType, updateUserLastSeen, { passive: true });
+        });
+    }
+}
+
+function stopLastSeenUpdates() {
+    if (lastSeenUpdateInterval) {
+        clearInterval(lastSeenUpdateInterval);
+        lastSeenUpdateInterval = null;
+    }
+}
+
 // Проверяем пользователя при загрузке
 (async () => {
     await checkCurrentUser();
+    
+    // Запускаем обновление last_seen для авторизованных пользователей
+    const userStr = sessionStorage.getItem('currentUser');
+    if (userStr) {
+        startLastSeenUpdates();
+    }
 })();
 
 // Отписываемся от обновлений при закрытии страницы
 window.addEventListener('beforeunload', () => {
     unsubscribeFromLobbyUpdates();
+    stopLastSeenUpdates();
+    // Последнее обновление перед закрытием
+    updateUserLastSeen();
 });
 
