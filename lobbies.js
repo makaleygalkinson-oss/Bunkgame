@@ -1,7 +1,6 @@
 // Управление лобби
 
 let lobbiesChannel = null;
-let currentUserId = null;
 
 // Инициализация системы лобби
 function initLobbiesSystem() {
@@ -10,9 +9,8 @@ function initLobbiesSystem() {
     // Получаем текущего пользователя
     supabase.auth.getSession().then(({ data: { session } }) => {
         if (session && session.user) {
-            currentUserId = session.user.id;
             if (typeof window !== 'undefined') {
-                window.currentUserId = currentUserId;
+                window.currentUserId = session.user.id;
             }
         }
     });
@@ -20,12 +18,10 @@ function initLobbiesSystem() {
     // Отслеживание изменений авторизации
     supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN' && session) {
-            currentUserId = session.user.id;
             if (typeof window !== 'undefined') {
-                window.currentUserId = currentUserId;
+                window.currentUserId = session.user.id;
             }
         } else if (event === 'SIGNED_OUT') {
-            currentUserId = null;
             if (typeof window !== 'undefined') {
                 window.currentUserId = null;
             }
@@ -154,6 +150,13 @@ async function updateLobbiesList() {
             return;
         }
         
+        // Получаем информацию о пользователях
+        const userIds = readyPlayers.map(p => p.user_id);
+        const { data: usersData } = await supabase
+            .from('users')
+            .select('id, email, name')
+            .in('id', userIds);
+        
         // Отображаем лобби
         lobbiesList.innerHTML = '';
         
@@ -166,7 +169,7 @@ async function updateLobbiesList() {
                 return user?.name || user?.email || 'Игрок';
             });
             
-            const userId = (typeof window !== 'undefined' && window.currentUserId) || currentUserId || null;
+            const userId = (typeof window !== 'undefined' && window.currentUserId) || null;
             const isUserInLobby = userId && lobby.players.includes(userId);
             
             lobbyCard.innerHTML = `
@@ -222,15 +225,6 @@ function groupPlayersIntoLobbies(players) {
     return [lobby];
 }
 
-// Инициализация при загрузке страницы
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        initLobbiesSystem();
-    });
-} else {
-    initLobbiesSystem();
-}
-
 // Подписка на обновления лобби
 function subscribeToLobbiesUpdates() {
     try {
@@ -262,7 +256,9 @@ function subscribeToLobbiesUpdates() {
 
 // Инициализация при загрузке страницы
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLobbiesSystem);
+    document.addEventListener('DOMContentLoaded', () => {
+        initLobbiesSystem();
+    });
 } else {
     initLobbiesSystem();
 }

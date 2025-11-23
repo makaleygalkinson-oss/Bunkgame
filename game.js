@@ -2,8 +2,12 @@
 
 console.log('🎮 Страница игры загружена');
 
-let currentUserId = null;
 let playersCountInterval = null;
+
+// Получение текущего user_id
+function getCurrentUserId() {
+    return (typeof window !== 'undefined' && window.currentUserId) || null;
+}
 let lastPlayersCount = -1; // Последнее известное количество игроков
 let playersChannel = null; // Канал для real-time обновлений
 let lastPlayersList = null; // Последний список игроков (для предотвращения моргания)
@@ -42,10 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('❌ Пользователь не авторизован, возвращаем на главную');
             window.location.href = 'index.html';
         } else {
-            currentUserId = session.user.id;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = session.user.id;
+            }
             console.log('✅ Пользователь авторизован:', session.user.email);
             
             // Проверяем lobby_id - если игрок не в лобби, возвращаем на главную
+            const currentUserId = getCurrentUserId();
             const { data: userData, error: userError } = await supabase
                 .from('users')
                 .select('lobby_id')
@@ -80,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Убеждаемся, что запись игрока есть в ready_players
 async function ensurePlayerInGame() {
+    const currentUserId = getCurrentUserId();
     if (!currentUserId) return;
     
     try {
@@ -142,6 +150,7 @@ function initGame() {
         // Увеличиваем интервал до 10 секунд, так как real-time должен обновлять мгновенно
         if (!playersCountInterval) {
             playersCountInterval = setInterval(() => {
+                const currentUserId = getCurrentUserId();
                 if (currentUserId && !document.hidden) {
                     updatePlayersCount(true); // silent = true для периодических обновлений
                     updatePlayersCards(true); // Обновляем карточки тоже
@@ -183,6 +192,7 @@ function setupExitButton() {
 async function exitFromLobby() {
     console.log('🚪 Функция exitFromLobby вызвана');
     
+    const currentUserId = getCurrentUserId();
     if (!currentUserId) {
         console.log('ℹ️ Пользователь не авторизован, просто перекидываем на главную');
         window.location.href = 'index.html';

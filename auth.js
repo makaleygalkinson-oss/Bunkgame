@@ -144,6 +144,9 @@ if (registerForm) {
                 
                 if (!loginError && loginData.user) {
                     currentUser = loginData.user;
+                    if (typeof window !== 'undefined') {
+                        window.currentUserId = loginData.user.id;
+                    }
                     updateAuthUI(loginData.user);
                     messageEl.textContent = 'Регистрация успешна! Вы вошли в систему.';
                     messageEl.className = 'form-message success';
@@ -207,6 +210,9 @@ if (loginForm) {
             
             if (data.user) {
                 currentUser = data.user;
+                if (typeof window !== 'undefined') {
+                    window.currentUserId = data.user.id;
+                }
                 // Убеждаемся, что пользователь есть в БД
                 await ensureUserInDB(data.user);
                 updateAuthUI(data.user);
@@ -321,6 +327,9 @@ function updateAuthUI(user) {
                 }
                 await supabase.auth.signOut();
                 currentUser = null;
+                if (typeof window !== 'undefined') {
+                    window.currentUserId = null;
+                }
                 location.reload();
             });
         }
@@ -344,23 +353,38 @@ function initAuthSession() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (session && session.user) {
             currentUser = session.user;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = session.user.id;
+            }
             await ensureUserInDB(session.user);
             updateAuthUI(session.user);
         } else {
+            if (typeof window !== 'undefined') {
+                window.currentUserId = null;
+            }
             updateAuthUI(null);
         }
     }).catch(err => {
         console.error('Ошибка проверки сессии:', err);
+        if (typeof window !== 'undefined') {
+            window.currentUserId = null;
+        }
         updateAuthUI(null);
     });
 
     supabase.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
             currentUser = session.user;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = session.user.id;
+            }
             await ensureUserInDB(session.user);
             updateAuthUI(session.user);
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = null;
+            }
             updateAuthUI(null);
             if (typeof removeReadyStatus === 'function') {
                 await removeReadyStatus();

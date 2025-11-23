@@ -1,9 +1,13 @@
 // Управление готовностью игроков с real-time обновлением
 
 let readyChannel = null;
-let currentUserId = null;
 let isReady = false;
 let isAdmin = false; // Флаг для проверки админа
+
+// Получение текущего user_id
+function getCurrentUserId() {
+    return (typeof window !== 'undefined' && window.currentUserId) || null;
+}
 
 // Инициализация системы готовности
 function initReadySystem() {
@@ -16,7 +20,9 @@ function initReadySystem() {
     // Проверяем авторизацию
     supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (session && session.user) {
-            currentUserId = session.user.id;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = session.user.id;
+            }
             console.log('✅ Пользователь авторизован');
             
             // Проверяем lobby_id - если игрок в лобби, перекидываем на game.html
@@ -40,6 +46,9 @@ function initReadySystem() {
             await checkAdminForStartButton();
         } else {
             console.log('ℹ️ Пользователь не авторизован');
+            if (typeof window !== 'undefined') {
+                window.currentUserId = null;
+            }
             updateReadyCountVisibility(); // Скрываем счётчик
             hideStartGameButton();
         }
@@ -52,10 +61,13 @@ function initReadySystem() {
     supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('🔄 Изменение авторизации:', event);
         if (event === 'SIGNED_IN' && session) {
-            currentUserId = session.user.id;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = session.user.id;
+            }
             console.log('✅ Вход выполнен');
             
             // Проверяем lobby_id - если игрок в лобби, перекидываем на game.html
+            const currentUserId = getCurrentUserId();
             const { data: userData, error: userError } = await supabase
                 .from('users')
                 .select('lobby_id')
@@ -75,7 +87,9 @@ function initReadySystem() {
             // Проверяем админа для показа кнопки START GAME
             await checkAdminForStartButton();
         } else if (event === 'SIGNED_OUT') {
-            currentUserId = null;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = null;
+            }
             isReady = false;
             isAdmin = false;
             updateReadyButton(false);
@@ -125,6 +139,7 @@ function showReadySection() {
 function updateReadyCountVisibility() {
     const countEl = document.getElementById('readyCount');
     if (countEl) {
+        const currentUserId = getCurrentUserId();
         if (currentUserId) {
             // Показываем счётчик только для авторизованных
             countEl.style.display = 'block';
@@ -138,7 +153,8 @@ function updateReadyCountVisibility() {
 // Скрыть секцию готовности (не используем, кнопка всегда видна)
 function hideReadySection() {
     // Не скрываем кнопку, просто сбрасываем статус
-    if (currentDeviceId) {
+    const currentUserId = getCurrentUserId();
+    if (currentUserId) {
         removeReadyStatus();
     }
     // Кнопка остаётся видимой
@@ -149,13 +165,15 @@ function setupReadySystem() {
     const readyBtn = document.getElementById('readyBtn');
     if (!readyBtn) return;
 
-    // Проверяем текущий статус
-    if (currentDeviceId) {
+    // Проверяем текущий статус (только для авторизованных)
+    const currentUserId = getCurrentUserId();
+    if (currentUserId) {
         checkCurrentReadyStatus();
     }
 
     // Обработчик нажатия на кнопку Ready
     readyBtn.addEventListener('click', async () => {
+        const currentUserId = getCurrentUserId();
         // Если не авторизован - показываем сообщение и открываем окно входа
         if (!currentUserId) {
             showAuthRequiredMessage();
@@ -195,6 +213,7 @@ function setupReadySystem() {
 
     // Удаление статуса при выходе со страницы
     const removeOnExit = () => {
+        const currentUserId = getCurrentUserId();
         if (currentUserId && isReady) {
             // Пытаемся удалить асинхронно
             removeReadyStatus();
@@ -209,6 +228,7 @@ function setupReadySystem() {
     
     // Также при скрытии вкладки
     document.addEventListener('visibilitychange', () => {
+        const currentUserId = getCurrentUserId();
         if (document.hidden && currentUserId && isReady) {
             // Не удаляем сразу, но помечаем для удаления при полном выходе
         }
@@ -218,13 +238,15 @@ function setupReadySystem() {
 // Проверка, началась ли игра (игрок находится в активном лобби)
 async function checkIfGameStarted() {
     try {
-        // Проверяем, есть ли запись в ready_players для текущего устройства
-        if (!currentDeviceId) return false;
+        // Проверяем lobby_id пользователя
+        // Если lobby_id > 0 - игрок в лобби
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId) return false;
         
         const { data, error } = await supabase
-            .from('ready_players')
-            .select('device_id')
-            .eq('device_id', currentDeviceId)
+            .from('users')
+            .select('lobby_id')
+            .eq('id', currentUserId)
             .maybeSingle();
         
         if (error && error.code !== 'PGRST116') {
@@ -232,8 +254,10 @@ async function checkIfGameStarted() {
             return false;
         }
         
-        const isInGame = !!data;
-        console.log('🎮 Проверка статуса игры:', { isInGame, hasRecord: !!data });
+        // Если lobby_id > 0 - игра началась (игрок в лобби)
+        const lobbyId = data?.lobby_id || 0;
+        const isInGame = lobbyId > 0;
+        console.log('🎮 Проверка статуса игры:', { isInGame, lobbyId, hasRecord: !!data });
         return isInGame;
     } catch (err) {
         console.error('Ошибка в checkIfGameStarted:', err);
@@ -243,6 +267,7 @@ async function checkIfGameStarted() {
 
 // Проверка текущего статуса готовности
 async function checkCurrentReadyStatus() {
+    const currentUserId = getCurrentUserId();
     if (!currentUserId) return;
 
     try {
@@ -289,6 +314,7 @@ async function checkCurrentReadyStatus() {
 
 // Переключение статуса готовности
 async function toggleReadyStatus() {
+    const currentUserId = getCurrentUserId();
     if (!currentUserId) return;
 
     try {
@@ -340,6 +366,7 @@ async function toggleReadyStatus() {
 
 // Удаление статуса готовности (доступна глобально)
 async function removeReadyStatus() {
+    const currentUserId = getCurrentUserId();
     if (!currentUserId) return;
 
     try {
@@ -393,6 +420,7 @@ function showAuthRequiredMessage() {
 
 // Синхронное удаление статуса (для beforeunload)
 function removeReadyStatusSync() {
+    const currentUserId = getCurrentUserId();
     if (!currentUserId) return;
 
     try {
@@ -426,6 +454,7 @@ async function updateReadyButton(ready) {
 // Обновление счётчика готовых игроков (только для авторизованных)
 async function updateReadyCount() {
     // Обновляем счётчик только если пользователь авторизован
+    const currentUserId = getCurrentUserId();
     if (!currentUserId) {
         return;
     }
@@ -479,6 +508,7 @@ function subscribeToReadyUpdates() {
                     updateReadyCount();
                     
                     // Если это наш пользователь, обновляем кнопку
+                    const currentUserId = getCurrentUserId();
                     if (payload.new && payload.new.user_id === currentUserId) {
                         isReady = true;
                         updateReadyButton(true);
@@ -502,6 +532,7 @@ function subscribeToReadyUpdates() {
             .on('broadcast', { event: 'game_started' }, async (payload) => {
                 // Получен сигнал начала игры - перекидываем на страницу игры
                 console.log('🎮 Получен сигнал начала игры!', payload);
+                const currentUserId = getCurrentUserId();
                 console.log('📊 Текущий статус:', { isReady, currentUserId });
                 
                 // Сбрасываем статус готовности и деактивируем кнопку
@@ -509,11 +540,12 @@ function subscribeToReadyUpdates() {
                 await updateReadyButton(false);
                 
                 // Проверяем, есть ли запись игрока в ready_players (игрок в игре)
-                if (currentUserId) {
+                const userId = getCurrentUserId();
+                if (userId) {
                     const { data: userData } = await supabase
                         .from('users')
                         .select('lobby_id')
-                        .eq('id', currentUserId)
+                        .eq('id', userId)
                         .maybeSingle();
                     
                     if (userData && userData.lobby_id > 0) {
@@ -545,6 +577,7 @@ function subscribeToReadyUpdates() {
         // Увеличиваем интервал до 2 секунд, чтобы не перегружать сервер
         if (!window.readyCountInterval) {
             window.readyCountInterval = setInterval(() => {
+                const currentUserId = getCurrentUserId();
                 if (currentUserId && !document.hidden) {
                     updateReadyCount();
                 }
@@ -554,6 +587,7 @@ function subscribeToReadyUpdates() {
 
 // Проверка админа для показа кнопки START GAME
 async function checkAdminForStartButton() {
+    const currentUserId = getCurrentUserId();
     if (!currentUserId) {
         hideStartGameButton();
         return;
