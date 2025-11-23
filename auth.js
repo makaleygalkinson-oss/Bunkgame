@@ -454,32 +454,14 @@ function updateAuthUI(user) {
             <button class="auth-btn" id="logoutBtn">Выйти</button>
         `;
         
-        // Инициализация кнопки лобби
-        if (typeof setupLobbiesModal === 'function') {
-            setTimeout(() => setupLobbiesModal(), 100);
-        }
-        
-        // Обработчик выхода (удаляем старый, если есть, и добавляем новый)
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            // Клонируем кнопку, чтобы удалить все старые обработчики
-            const newLogoutBtn = logoutBtn.cloneNode(true);
-            logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
-            
-            newLogoutBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                if (typeof removeReadyStatus === 'function') {
-                    await removeReadyStatus();
+        // Переинициализация всех кнопок после изменения DOM
+        if (typeof window !== 'undefined' && typeof window.reinitButtons === 'function') {
+            setTimeout(() => {
+                window.reinitButtons();
+                if (typeof setupLobbiesModal === 'function') {
+                    setupLobbiesModal();
                 }
-                await supabase.auth.signOut();
-                currentUser = null;
-                if (typeof window !== 'undefined') {
-                    window.currentUserId = null;
-                }
-                location.reload();
-            });
+            }, 100);
         }
     } else {
         authButtons.innerHTML = `
@@ -488,11 +470,15 @@ function updateAuthUI(user) {
             <button class="auth-btn lobbies-btn" id="lobbiesBtn" title="Активные лобби">ЛОББИ</button>
         `;
         
-        // Переинициализация кнопок
-        const newRegisterBtn = document.getElementById('registerBtn');
-        const newLoginBtn = document.getElementById('loginBtn');
-        if (newRegisterBtn) newRegisterBtn.addEventListener('click', () => openModal('registerModal'));
-        if (newLoginBtn) newLoginBtn.addEventListener('click', () => openModal('loginModal'));
+        // Переинициализация всех кнопок после изменения DOM
+        if (typeof window !== 'undefined' && typeof window.reinitButtons === 'function') {
+            setTimeout(() => {
+                window.reinitButtons();
+                if (typeof setupLobbiesModal === 'function') {
+                    setupLobbiesModal();
+                }
+            }, 100);
+        }
     }
 }
 

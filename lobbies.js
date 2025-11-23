@@ -48,8 +48,20 @@ function setupLobbiesModal() {
     
     console.log('🔧 Настройка модального окна лобби...');
     
+    // Используем универсальную систему инициализации кнопок, если она доступна
+    if (typeof window !== 'undefined' && typeof window.reinitButtons === 'function') {
+        setTimeout(() => window.reinitButtons(), 50);
+    }
+    
     // Обработчик кнопки открытия (удаляем старый, если есть, и добавляем новый)
     if (lobbiesBtn) {
+        // Активируем кнопку
+        lobbiesBtn.disabled = false;
+        lobbiesBtn.removeAttribute('disabled');
+        lobbiesBtn.style.opacity = '1';
+        lobbiesBtn.style.cursor = 'pointer';
+        lobbiesBtn.style.pointerEvents = 'auto';
+        
         // Клонируем кнопку, чтобы удалить все старые обработчики
         const newLobbiesBtn = lobbiesBtn.cloneNode(true);
         lobbiesBtn.parentNode.replaceChild(newLobbiesBtn, lobbiesBtn);

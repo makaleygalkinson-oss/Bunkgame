@@ -185,10 +185,17 @@ function showReadySection() {
         const readyBtn = document.getElementById('readyBtn');
         if (readyBtn) {
             readyBtn.disabled = false;
+            readyBtn.removeAttribute('disabled');
             readyBtn.style.opacity = '1';
             readyBtn.style.cursor = 'pointer';
             readyBtn.style.pointerEvents = 'auto';
+            readyBtn.style.userSelect = 'none';
             console.log('✅ Кнопка Ready активирована');
+        }
+        
+        // Переинициализируем кнопки через универсальную систему
+        if (typeof window !== 'undefined' && typeof window.reinitButtons === 'function') {
+            setTimeout(() => window.reinitButtons(), 50);
         }
     } else {
         console.error('❌ Элемент readySection не найден');
@@ -281,6 +288,11 @@ function setupReadySystem() {
         // Позволяем переключать статус готовности
         await toggleReadyStatus();
     });
+    
+    // Используем универсальную систему инициализации кнопок, если она доступна
+    if (typeof window !== 'undefined' && typeof window.reinitButtons === 'function') {
+        setTimeout(() => window.reinitButtons(), 50);
+    }
     
     console.log('✅ Обработчик кнопки Ready добавлен');
     
@@ -744,7 +756,17 @@ function showStartGameButton() {
     const startBtn = document.getElementById('startGameBtn');
     if (startBtn) {
         startBtn.style.display = 'block';
-        console.log('✅ Кнопка START GAME показана (админ)');
+        // Активируем кнопку
+        startBtn.disabled = false;
+        startBtn.removeAttribute('disabled');
+        startBtn.style.opacity = '1';
+        startBtn.style.cursor = 'pointer';
+        startBtn.style.pointerEvents = 'auto';
+        // Переинициализируем обработчик
+        if (typeof window !== 'undefined' && typeof window.reinitButtons === 'function') {
+            setTimeout(() => window.reinitButtons(), 50);
+        }
+        console.log('✅ Кнопка START GAME показана и активирована');
     }
 }
 
