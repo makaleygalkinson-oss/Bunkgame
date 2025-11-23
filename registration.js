@@ -457,13 +457,32 @@ async function connectToLobby(lobbyId) {
             return;
         }
         
+        // Проверяем, что обновление действительно произошло
+        if (!updatedData || updatedData.length === 0) {
+            console.error('Обновление не произошло: данные не вернулись');
+            alert('Ошибка: не удалось обновить данные пользователя');
+            return;
+        }
+        
         console.log('Успешно обновлено:', updatedData);
+        console.log('Новый lobby_id пользователя:', updatedData[0].lobby_id);
+        
+        // Проверяем, что lobby_id действительно обновился
+        if (updatedData[0].lobby_id !== numericLobbyId) {
+            console.error('Ошибка: lobby_id не совпадает! Ожидалось:', numericLobbyId, 'Получено:', updatedData[0].lobby_id);
+            alert('Ошибка: lobby_id не обновился корректно');
+            return;
+        }
         
         // Сохраняем информацию о лобби в sessionStorage
         sessionStorage.setItem('currentLobbyId', numericLobbyId.toString());
         
-        // Переходим на страницу игры
-        window.location.href = 'game.html';
+        console.log('Переход на страницу игры через 500мс...');
+        
+        // Небольшая задержка перед переходом, чтобы убедиться, что всё сохранилось
+        setTimeout(() => {
+            window.location.href = 'game.html';
+        }, 500);
         
     } catch (err) {
         console.error('Ошибка подключения к лобби:', err);
