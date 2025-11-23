@@ -18,6 +18,11 @@
             <span class="counter-number" id="visitorCount">0</span>
         </div>
     </div>
+    
+    <!-- Кнопка регистрации -->
+    <div class="register-button-container">
+        <button class="register-btn" id="registerBtn">Регистрация</button>
+    </div>
     <div class="canvas">
         <div class="shapes-container">
             <div class="shape shape-1"></div>
@@ -58,6 +63,68 @@
         </div>
     </div>
 
+    <!-- Модальное окно регистрации -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeRegisterModal">&times;</span>
+            <h2 class="modal-title">Регистрация</h2>
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Пароль</label>
+                    <input type="password" id="registerPassword" name="password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="registerName">Имя</label>
+                    <input type="text" id="registerName" name="name" required>
+                </div>
+                <div class="form-message" id="registerMessage"></div>
+                <button type="submit" class="submit-btn">Зарегистрироваться</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="registration.js"></script>
     <script src="counter.js"></script>
+    <script>
+        // Инициализация кнопки регистрации
+        document.addEventListener('DOMContentLoaded', () => {
+            const registerBtn = document.getElementById('registerBtn');
+            const closeRegisterModalBtn = document.getElementById('closeRegisterModal');
+            
+            if (registerBtn) {
+                registerBtn.addEventListener('click', () => {
+                    if (typeof openRegisterModal === 'function') {
+                        openRegisterModal();
+                    }
+                });
+            }
+            
+            if (closeRegisterModalBtn) {
+                closeRegisterModalBtn.addEventListener('click', () => {
+                    if (typeof closeRegisterModal === 'function') {
+                        closeRegisterModal();
+                    }
+                });
+            }
+            
+            // Закрытие при клике вне модального окна
+            const registerModal = document.getElementById('registerModal');
+            if (registerModal) {
+                registerModal.addEventListener('click', (e) => {
+                    if (e.target === registerModal) {
+                        if (typeof closeRegisterModal === 'function') {
+                            closeRegisterModal();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
