@@ -44,6 +44,9 @@ function initReadySystem() {
             await checkCurrentReadyStatus();
             // Проверяем админа для показа кнопки START GAME
             await checkAdminForStartButton();
+            
+            // Запускаем периодическую проверку lobby_id для автоматического перекидывания
+            startLobbyCheckInterval();
         } else {
             console.log('ℹ️ Пользователь не авторизован');
             if (typeof window !== 'undefined') {
@@ -51,6 +54,7 @@ function initReadySystem() {
             }
             updateReadyCountVisibility(); // Скрываем счётчик
             hideStartGameButton();
+            stopLobbyCheckInterval(); // Останавливаем проверку лобби
         }
     }).catch(err => {
         console.error('❌ Ошибка проверки сессии:', err);
@@ -86,6 +90,9 @@ function initReadySystem() {
             await checkCurrentReadyStatus();
             // Проверяем админа для показа кнопки START GAME
             await checkAdminForStartButton();
+            
+            // Запускаем периодическую проверку lobby_id для автоматического перекидывания
+            startLobbyCheckInterval();
         } else if (event === 'SIGNED_OUT') {
             if (typeof window !== 'undefined') {
                 window.currentUserId = null;
@@ -95,6 +102,7 @@ function initReadySystem() {
             updateReadyButton(false);
             updateReadyCountVisibility(); // Скрываем счётчик
             hideStartGameButton();
+            stopLobbyCheckInterval(); // Останавливаем проверку лобби
             console.log('👋 Выход выполнен');
             if (readyChannel) {
                 try {
@@ -725,7 +733,7 @@ async function sendGameStartBroadcast(channel, selectedRoles) {
             
             console.log('🎮 Создаем новое лобби с ID:', newLobbyId, 'для игроков:', userIds);
             
-            // Устанавливаем новый lobby_id для всех готовых игроков
+            // Устанавливаем новый lobby_id для всех готовых игроков ОДНОВРЕМЕННО
             const { error: updateError } = await supabase
                 .from('users')
                 .update({ lobby_id: newLobbyId })
@@ -733,37 +741,89 @@ async function sendGameStartBroadcast(channel, selectedRoles) {
             
             if (updateError) {
                 console.error('❌ Ошибка установки lobby_id:', updateError);
+                alert('Ошибка создания лобби. Попробуйте еще раз.');
+                return;
             } else {
-                console.log(`✅ lobby_id = ${newLobbyId} установлен для всех готовых игроков`);
+                console.log(`✅ lobby_id = ${newLobbyId} установлен для всех готовых игроков:`, userIds);
             }
-        }
-        
-        // Отправляем broadcast сообщение
-        const { error: sendError } = await channel.send({
-            type: 'broadcast',
-            event: 'game_started',
-            payload: { 
-                timestamp: new Date().toISOString(),
-                roles: selectedRoles
-            }
-        });
-        
-        if (sendError) {
-            console.error('❌ Ошибка отправки broadcast:', sendError);
-            // В случае ошибки перекидываем админа напрямую
-            window.location.href = 'game.html';
-        } else {
-            console.log('✅ Сигнал начала игры отправлен через broadcast');
             
-            // Перекидываем админа через небольшую задержку
+            // Отправляем broadcast сообщение ВСЕМ подписанным игрокам
+            const { error: sendError } = await channel.send({
+                type: 'broadcast',
+                event: 'game_started',
+                payload: { 
+                    timestamp: new Date().toISOString(),
+                    roles: selectedRoles,
+                    lobby_id: newLobbyId
+                }
+            });
+            
+            if (sendError) {
+                console.error('❌ Ошибка отправки broadcast:', sendError);
+            } else {
+                console.log('✅ Сигнал начала игры отправлен через broadcast');
+            }
+            
+            // Перекидываем всех игроков (включая того, кто нажал START GAME) через небольшую задержку
+            // Это гарантирует, что все попадут в игру, даже если broadcast не дошел
             setTimeout(() => {
-                console.log('🎮 Перекидываем админа на game.html');
+                console.log('🎮 Перекидываем всех игроков на game.html');
                 window.location.href = 'game.html';
-            }, 1000);
+            }, 1500);
+        } else {
+            alert('Нет готовых игроков для начала игры');
         }
     } catch (err) {
         console.error('❌ Ошибка в sendGameStartBroadcast:', err);
         window.location.href = 'game.html';
+    }
+}
+
+// Периодическая проверка lobby_id для автоматического перекидывания в игру
+let lobbyCheckInterval = null;
+
+function startLobbyCheckInterval() {
+    // Останавливаем предыдущий интервал, если есть
+    if (lobbyCheckInterval) {
+        clearInterval(lobbyCheckInterval);
+    }
+    
+    // Проверяем lobby_id каждые 2 секунды
+    lobbyCheckInterval = setInterval(async () => {
+        const userId = getCurrentUserId();
+        if (!userId) {
+            return;
+        }
+        
+        // Не проверяем, если страница скрыта
+        if (document.hidden) {
+            return;
+        }
+        
+        try {
+            const { data: userData, error } = await supabase
+                .from('users')
+                .select('lobby_id')
+                .eq('id', userId)
+                .maybeSingle();
+            
+            if (!error && userData && userData.lobby_id > 0) {
+                console.log('🎮 Игрок в лобби (lobby_id =', userData.lobby_id, '), перекидываем на game.html');
+                clearInterval(lobbyCheckInterval);
+                lobbyCheckInterval = null;
+                window.location.href = 'game.html';
+            }
+        } catch (err) {
+            console.error('Ошибка проверки лобби:', err);
+        }
+    }, 2000);
+}
+
+// Останавливаем проверку при выходе
+function stopLobbyCheckInterval() {
+    if (lobbyCheckInterval) {
+        clearInterval(lobbyCheckInterval);
+        lobbyCheckInterval = null;
     }
 }
 
