@@ -319,10 +319,17 @@ function updateAuthUI(user) {
             setTimeout(() => setupLobbiesModal(), 100);
         }
         
-        // Обработчик выхода
+        // Обработчик выхода (удаляем старый, если есть, и добавляем новый)
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', async () => {
+            // Клонируем кнопку, чтобы удалить все старые обработчики
+            const newLogoutBtn = logoutBtn.cloneNode(true);
+            logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+            
+            newLogoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
                 if (typeof removeReadyStatus === 'function') {
                     await removeReadyStatus();
                 }

@@ -3,6 +3,7 @@
 let readyChannel = null;
 let isReady = false;
 let isAdmin = false; // Флаг для проверки админа
+let readySystemInitialized = false; // Флаг инициализации
 
 // Получение текущего user_id
 function getCurrentUserId() {
@@ -15,7 +16,12 @@ function initReadySystem() {
     
     // Показываем кнопку всем
     showReadySection();
-    setupReadySystem();
+    
+    // Настраиваем систему готовности только один раз
+    if (!readySystemInitialized) {
+        setupReadySystem();
+        readySystemInitialized = true;
+    }
     
     // Проверяем авторизацию
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -171,7 +177,14 @@ function hideReadySection() {
 // Настройка системы готовности
 function setupReadySystem() {
     const readyBtn = document.getElementById('readyBtn');
-    if (!readyBtn) return;
+    if (!readyBtn) {
+        console.error('❌ Кнопка readyBtn не найдена');
+        return;
+    }
+
+    // Удаляем старый обработчик, если есть (клонируем кнопку)
+    const newReadyBtn = readyBtn.cloneNode(true);
+    readyBtn.parentNode.replaceChild(newReadyBtn, readyBtn);
 
     // Проверяем текущий статус (только для авторизованных)
     const currentUserId = getCurrentUserId();
@@ -180,7 +193,10 @@ function setupReadySystem() {
     }
 
     // Обработчик нажатия на кнопку Ready
-    readyBtn.addEventListener('click', async () => {
+    newReadyBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const currentUserId = getCurrentUserId();
         // Если не авторизован - показываем сообщение и открываем окно входа
         if (!currentUserId) {
@@ -192,10 +208,18 @@ function setupReadySystem() {
         await toggleReadyStatus();
     });
     
-    // Обработчик кнопки START GAME
+    console.log('✅ Обработчик кнопки Ready добавлен');
+    
+    // Обработчик кнопки START GAME (удаляем старый, если есть)
     const startGameBtn = document.getElementById('startGameBtn');
     if (startGameBtn) {
-        startGameBtn.addEventListener('click', async () => {
+        // Клонируем кнопку, чтобы удалить все старые обработчики
+        const newStartBtn = startGameBtn.cloneNode(true);
+        startGameBtn.parentNode.replaceChild(newStartBtn, startGameBtn);
+        
+        newStartBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const currentUserId = getCurrentUserId();
             if (!currentUserId) {
                 alert('Необходимо войти в систему');
