@@ -683,6 +683,13 @@ body {
     max-width: 350px;
 }
 
+.game-exit-section {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
 .game-exit-btn {
     background: rgba(200, 50, 50, 0.9);
     backdrop-filter: blur(10px);
@@ -796,14 +803,14 @@ body {
     position: relative;
 }
 
-/* Центрирование карточки игрока относительно надписи ИГРА */
+/* Выравнивание карточки игрока вправо относительно надписи ИГРА */
 .game-center-column {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 0;
     flex: 0 0 auto;
     width: 450px;
     z-index: 10;
+    margin-right: 2rem;
 }
 
 .game-left-column {
