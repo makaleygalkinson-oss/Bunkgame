@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Загружаем информацию о лобби
     await loadLobbyInfo();
     
+    // Загружаем карты игроков
+    await loadPlayersCards();
+    
     // Обновляем last_seen при активности
     startLastSeenUpdates();
 });
@@ -130,6 +133,82 @@ async function loadLobbyInfo() {
     } catch (err) {
         console.error('Ошибка загрузки информации о лобби:', err);
         gameInfo.innerHTML = '<p class="game-error">Ошибка загрузки информации о лобби</p>';
+    }
+}
+
+// Загрузка карт игроков
+async function loadPlayersCards() {
+    try {
+        // Получаем текущего пользователя
+        const userStr = sessionStorage.getItem('currentUser');
+        if (!userStr) {
+            console.error('Пользователь не найден');
+            return;
+        }
+        
+        const currentUser = JSON.parse(userStr);
+        
+        // Получаем всех игроков в лобби
+        const { data: players, error: playersError } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('lobby_id', currentLobbyId);
+        
+        if (playersError) {
+            console.error('Ошибка загрузки игроков:', playersError);
+            return;
+        }
+        
+        if (!players || players.length === 0) {
+            console.log('Игроки не найдены');
+            return;
+        }
+        
+        // Находим текущего игрока
+        const currentPlayer = players.find(p => p.id === currentUser.id);
+        const otherPlayers = players.filter(p => p.id !== currentUser.id);
+        
+        // Создаем карту для текущего игрока
+        const currentPlayerCard = document.getElementById('currentPlayerCard');
+        if (currentPlayerCard && currentPlayer) {
+            const playerName = currentPlayer.name || currentPlayer.email;
+            const nameElement = document.getElementById('currentPlayerName');
+            if (nameElement) {
+                nameElement.textContent = playerName;
+            }
+        }
+        
+        // Создаем карты для других игроков
+        const otherPlayersCards = document.getElementById('otherPlayersCards');
+        if (otherPlayersCards) {
+            otherPlayersCards.innerHTML = '';
+            
+            if (otherPlayers.length === 0) {
+                otherPlayersCards.innerHTML = '<p class="no-other-players">Других игроков пока нет</p>';
+                return;
+            }
+            
+            otherPlayers.forEach((player) => {
+                const playerCard = document.createElement('div');
+                playerCard.className = 'player-card other-player-card';
+                
+                const playerName = player.name || player.email;
+                
+                playerCard.innerHTML = `
+                    <div class="player-card-header">
+                        <span class="player-card-name">${playerName}</span>
+                    </div>
+                    <div class="player-card-content">
+                        <!-- Содержимое карты игрока -->
+                    </div>
+                `;
+                
+                otherPlayersCards.appendChild(playerCard);
+            });
+        }
+        
+    } catch (err) {
+        console.error('Ошибка загрузки карт игроков:', err);
     }
 }
 

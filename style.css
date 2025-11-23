@@ -804,10 +804,17 @@ body {
     padding-left: 2rem;
 }
 
+.game-center-column {
+    flex: 0 0 auto;
+    width: 350px;
+    margin: 0 auto;
+}
+
 .game-right-column {
     flex: 0 0 auto;
     width: 600px;
     margin-left: auto;
+    margin-right: 2rem;
 }
 
 /* Блок "Секретная Информация о бункере" */
@@ -906,6 +913,98 @@ body {
     color: #d0d0d0;
     font-size: 1.1rem;
     line-height: 1.8;
+}
+
+/* Карта игрока */
+.player-card {
+    background: rgba(40, 40, 40, 0.8);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(150, 150, 150, 0.3);
+    border-radius: 20px;
+    text-align: left;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    min-height: 800px;
+    display: flex;
+    flex-direction: column;
+}
+
+.player-card-header {
+    background: rgba(60, 60, 60, 0.9);
+    border-bottom: 2px solid rgba(150, 150, 150, 0.3);
+    padding: 1.5rem 2rem;
+    border-radius: 20px 20px 0 0;
+    text-align: center;
+}
+
+.player-card-name {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #00ff88;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.player-card-content {
+    flex: 1;
+    padding: 2rem;
+    color: #d0d0d0;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    min-height: 600px;
+}
+
+/* Секция для других игроков */
+.other-players-section {
+    margin-top: 3rem;
+    padding: 0 2rem 2rem 2rem;
+}
+
+.other-players-title {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #d0d0d0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2rem;
+    text-align: center;
+    text-shadow: 0 0 20px rgba(208, 208, 208, 0.5);
+}
+
+.other-players-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.other-player-card {
+    min-height: 400px;
+    width: 300px;
+    flex: 0 0 auto;
+}
+
+.other-player-card .player-card-header {
+    padding: 1rem 1.5rem;
+}
+
+.other-player-card .player-card-name {
+    font-size: 1.3rem;
+}
+
+.other-player-card .player-card-content {
+    padding: 1.5rem;
+    min-height: 300px;
+    font-size: 1rem;
+}
+
+.no-other-players {
+    text-align: center;
+    color: #808080;
+    font-size: 1.2rem;
+    padding: 3rem;
+    font-style: italic;
 }
 
 /* Модальное окно лобби */
@@ -1476,11 +1575,52 @@ body {
     .game-left-column {
         max-width: 100%;
         width: 100%;
+        padding-left: 1rem;
+    }
+    
+    .game-center-column {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
     }
     
     .game-right-column {
         max-width: 100%;
         width: 100%;
+        margin: 0;
+        margin-right: 0;
+    }
+    
+    .player-card {
+        min-height: 500px;
+    }
+    
+    .player-card-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .player-card-name {
+        font-size: 1.5rem;
+    }
+    
+    .player-card-content {
+        padding: 1.5rem;
+        min-height: 400px;
+        font-size: 1rem;
+    }
+    
+    .other-players-section {
+        padding: 0 1rem 2rem 1rem;
+    }
+    
+    .other-players-cards {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .other-player-card {
+        width: 100%;
+        max-width: 400px;
     }
     
     .secret-info-block,
