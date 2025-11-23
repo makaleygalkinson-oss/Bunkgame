@@ -77,6 +77,22 @@ if (closeRulesModalBtn) {
     });
 }
 
+// Валидация email
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// Валидация пароля
+function isValidPassword(password) {
+    return password.length >= 6;
+}
+
+// Валидация имени
+function isValidName(name) {
+    return name.trim().length >= 2 && name.trim().length <= 50;
+}
+
 // Регистрация
 const registerForm = document.getElementById('registerForm');
 if (registerForm) {
@@ -89,6 +105,7 @@ if (registerForm) {
         
         const originalText = submitBtn.textContent;
         messageEl.textContent = '';
+        messageEl.className = 'form-message';
         submitBtn.textContent = 'Регистрация...';
         submitBtn.disabled = true;
         
@@ -96,16 +113,33 @@ if (registerForm) {
         const password = document.getElementById('registerPassword').value;
         const name = document.getElementById('registerName').value.trim();
         
+        // Валидация полей
         if (!email || !password || !name) {
-            messageEl.textContent = 'Заполните все поля';
+            messageEl.textContent = 'Пожалуйста, заполните все поля';
             messageEl.className = 'form-message error';
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
             return;
         }
         
-        if (password.length < 6) {
+        if (!isValidEmail(email)) {
+            messageEl.textContent = 'Введите корректный email адрес';
+            messageEl.className = 'form-message error';
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+        
+        if (!isValidPassword(password)) {
             messageEl.textContent = 'Пароль должен содержать минимум 6 символов';
+            messageEl.className = 'form-message error';
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+        
+        if (!isValidName(name)) {
+            messageEl.textContent = 'Имя должно содержать от 2 до 50 символов';
             messageEl.className = 'form-message error';
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
@@ -125,42 +159,71 @@ if (registerForm) {
                 }
             });
             
-            if (authError) throw authError;
-            
-            if (authData.user) {
-                // Создаем запись пользователя в базе данных
-                await createUserInDB(authData.user, name, email);
+            if (authError) {
+                // Обработка различных ошибок
+                let errorMessage = 'Ошибка при регистрации';
                 
-                // Пытаемся сразу войти
-                const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-                
-                if (!loginError && loginData.user) {
-                    currentUser = loginData.user;
-                    if (typeof window !== 'undefined') {
-                        window.currentUserId = loginData.user.id;
-                    }
-                    updateAuthUI(loginData.user);
-                    messageEl.textContent = 'Регистрация успешна! Вы вошли в систему.';
-                    messageEl.className = 'form-message success';
-                    e.target.reset();
-                    setTimeout(() => {
-                        closeRegisterModal();
-                    }, 1500);
-                } else {
-                    messageEl.textContent = 'Регистрация успешна! Войдите в систему.';
-                    messageEl.className = 'form-message success';
-                    e.target.reset();
-                    setTimeout(() => {
-                        closeRegisterModal();
-                    }, 1500);
+                if (authError.message.includes('User already registered') || 
+                    authError.message.includes('already registered') ||
+                    authError.message.includes('already exists')) {
+                    errorMessage = 'Пользователь с таким email уже зарегистрирован';
+                } else if (authError.message.includes('Invalid email')) {
+                    errorMessage = 'Некорректный email адрес';
+                } else if (authError.message.includes('Password')) {
+                    errorMessage = 'Пароль не соответствует требованиям';
+                } else if (authError.message) {
+                    errorMessage = authError.message;
                 }
+                
+                throw new Error(errorMessage);
+            }
+            
+            if (!authData || !authData.user) {
+                throw new Error('Не удалось создать пользователя. Попробуйте позже.');
+            }
+            
+            // Создаем запись пользователя в базе данных
+            const dbError = await createUserInDB(authData.user, name, email);
+            
+            if (dbError) {
+                console.warn('Предупреждение при создании пользователя в БД:', dbError);
+                // Не прерываем процесс, так как пользователь уже создан в Auth
+            }
+            
+            // Пытаемся сразу войти
+            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (!loginError && loginData && loginData.user) {
+                currentUser = loginData.user;
+                if (typeof window !== 'undefined') {
+                    window.currentUserId = loginData.user.id;
+                }
+                updateAuthUI(loginData.user);
+                messageEl.textContent = 'Регистрация успешна! Вы вошли в систему.';
+                messageEl.className = 'form-message success';
+                e.target.reset();
+                setTimeout(() => {
+                    closeRegisterModal();
+                }, 1500);
+            } else {
+                // Регистрация прошла, но автоматический вход не удался
+                messageEl.textContent = 'Регистрация успешна! Пожалуйста, войдите в систему.';
+                messageEl.className = 'form-message success';
+                e.target.reset();
+                setTimeout(() => {
+                    closeRegisterModal();
+                    // Открываем окно входа
+                    setTimeout(() => {
+                        openModal('loginModal');
+                    }, 300);
+                }, 1500);
             }
         } catch (error) {
             console.error('Ошибка регистрации:', error);
-            messageEl.textContent = error.message || 'Ошибка при регистрации';
+            messageEl.textContent = error.message || 'Ошибка при регистрации. Попробуйте позже.';
             messageEl.className = 'form-message error';
         } finally {
             submitBtn.textContent = originalText;
@@ -181,14 +244,24 @@ if (loginForm) {
         
         const originalText = submitBtn.textContent;
         messageEl.textContent = '';
+        messageEl.className = 'form-message';
         submitBtn.textContent = 'Вход...';
         submitBtn.disabled = true;
         
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         
+        // Валидация полей
         if (!email || !password) {
-            messageEl.textContent = 'Заполните все поля';
+            messageEl.textContent = 'Пожалуйста, заполните все поля';
+            messageEl.className = 'form-message error';
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+        
+        if (!isValidEmail(email)) {
+            messageEl.textContent = 'Введите корректный email адрес';
             messageEl.className = 'form-message error';
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
@@ -202,35 +275,56 @@ if (loginForm) {
             });
             
             if (error) {
-                throw error;
+                // Обработка различных ошибок входа
+                let errorMessage = 'Ошибка при входе';
+                
+                if (error.message.includes('Invalid login credentials') || 
+                    error.message.includes('Invalid password') ||
+                    error.message.includes('Wrong password')) {
+                    errorMessage = 'Неверный email или пароль';
+                } else if (error.message.includes('Email not confirmed')) {
+                    errorMessage = 'Email не подтвержден. Проверьте почту.';
+                } else if (error.message.includes('User not found')) {
+                    errorMessage = 'Пользователь с таким email не найден';
+                } else if (error.message.includes('Too many requests')) {
+                    errorMessage = 'Слишком много попыток. Попробуйте позже.';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
+                throw new Error(errorMessage);
             }
             
             // Supabase возвращает { user, session }
             const user = data?.user;
             
-            if (user) {
-                currentUser = user;
-                if (typeof window !== 'undefined') {
-                    window.currentUserId = user.id;
-                }
-                
-                // Убеждаемся, что пользователь есть в БД (не блокируем выполнение)
-                ensureUserInDB(user).catch(() => {});
-                
-                // Обновляем UI
-                updateAuthUI(user);
-                
-                messageEl.textContent = 'Вход выполнен успешно!';
-                messageEl.className = 'form-message success';
-                e.target.reset();
-                
-                // Закрываем модальное окно сразу
-                closeLoginModal();
-            } else {
-                messageEl.textContent = 'Ошибка: пользователь не найден';
-                messageEl.className = 'form-message error';
+            if (!user) {
+                throw new Error('Ошибка: пользователь не найден');
             }
+            
+            currentUser = user;
+            if (typeof window !== 'undefined') {
+                window.currentUserId = user.id;
+            }
+            
+            // Убеждаемся, что пользователь есть в БД (не блокируем выполнение)
+            ensureUserInDB(user).catch((err) => {
+                console.warn('Не удалось проверить/создать пользователя в БД:', err);
+            });
+            
+            // Обновляем UI
+            updateAuthUI(user);
+            
+            messageEl.textContent = 'Вход выполнен успешно!';
+            messageEl.className = 'form-message success';
+            e.target.reset();
+            
+            // Закрываем модальное окно через небольшую задержку для показа сообщения
+            setTimeout(() => {
+                closeLoginModal();
+            }, 500);
         } catch (error) {
+            console.error('Ошибка входа:', error);
             messageEl.textContent = error.message || 'Ошибка при входе. Проверьте email и пароль.';
             messageEl.className = 'form-message error';
         } finally {
@@ -243,6 +337,19 @@ if (loginForm) {
 // Создание пользователя в базе данных
 async function createUserInDB(user, name, email) {
     try {
+        // Проверяем, существует ли пользователь в БД
+        const { data: existingUser, error: checkError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle();
+        
+        // Если пользователь уже существует, не создаем заново
+        if (existingUser) {
+            console.log('Пользователь уже существует в БД');
+            return null;
+        }
+        
         const userData = {
             id: user.id,
             email: email,
@@ -252,34 +359,62 @@ async function createUserInDB(user, name, email) {
             updated_at: new Date().toISOString()
         };
         
+        // Пытаемся создать пользователя
         const { error } = await supabase
             .from('users')
-            .upsert([userData], { onConflict: 'id' });
+            .insert([userData]);
         
         if (error) {
-            // Пытаемся через RPC функцию, если есть
+            // Если ошибка из-за дубликата, это нормально
+            if (error.code === '23505' || error.message?.includes('duplicate key')) {
+                console.log('Пользователь уже существует (дубликат ключа)');
+                return null;
+            }
+            
+            // Если ошибка прав доступа, пробуем через RPC функцию
             if (error.code === '42501' || error.message?.includes('permission denied')) {
                 try {
-                    await supabase.rpc('create_user_on_login', {
+                    const { error: rpcError } = await supabase.rpc('create_user_on_login', {
                         p_user_id: user.id,
                         p_email: email,
                         p_name: name,
                         p_device_id: null,
                         p_lobby_id: 0
                     });
+                    
+                    if (rpcError) {
+                        console.warn('RPC функция недоступна или вернула ошибку:', rpcError);
+                        return rpcError;
+                    }
+                    
+                    return null; // Успешно создано через RPC
                 } catch (rpcError) {
-                    // Игнорируем ошибки RPC
+                    console.warn('Ошибка при вызове RPC функции:', rpcError);
+                    return rpcError;
                 }
             }
+            
+            // Другие ошибки
+            console.error('Ошибка создания пользователя в БД:', error);
+            return error;
         }
+        
+        console.log('Пользователь успешно создан в БД');
+        return null; // Успешно
     } catch (err) {
-        // Игнорируем ошибки создания пользователя
+        console.error('Исключение при создании пользователя в БД:', err);
+        return err;
     }
 }
 
 // Убедиться, что пользователь есть в БД
 async function ensureUserInDB(user) {
     try {
+        if (!user || !user.id) {
+            console.warn('Некорректные данные пользователя');
+            return;
+        }
+        
         const { data, error } = await supabase
             .from('users')
             .select('id')
@@ -293,8 +428,13 @@ async function ensureUserInDB(user) {
         
         if (!data) {
             // Пользователя нет - создаем
-            const name = user.user_metadata?.name || user.email;
-            await createUserInDB(user, name, user.email);
+            const name = user.user_metadata?.name || user.email?.split('@')[0] || 'Пользователь';
+            const email = user.email || '';
+            const dbError = await createUserInDB(user, name, email);
+            
+            if (dbError) {
+                console.warn('Не удалось создать пользователя в БД при проверке:', dbError);
+            }
         }
     } catch (err) {
         console.error('Ошибка проверки пользователя:', err);
@@ -404,12 +544,106 @@ function initAuthSession() {
 window.getCurrentUser = () => currentUser;
 window.getCurrentUserId = () => currentUser?.id || null;
 
+// Валидация в реальном времени для формы регистрации
+function setupRealTimeValidation() {
+    const registerEmail = document.getElementById('registerEmail');
+    const registerPassword = document.getElementById('registerPassword');
+    const registerName = document.getElementById('registerName');
+    const registerMessage = document.getElementById('registerMessage');
+    
+    if (registerEmail) {
+        registerEmail.addEventListener('blur', () => {
+            const email = registerEmail.value.trim();
+            if (email && !isValidEmail(email)) {
+                registerEmail.style.borderColor = '#ff4444';
+            } else {
+                registerEmail.style.borderColor = '';
+            }
+        });
+        
+        registerEmail.addEventListener('input', () => {
+            if (registerEmail.style.borderColor === 'rgb(255, 68, 68)') {
+                const email = registerEmail.value.trim();
+                if (!email || isValidEmail(email)) {
+                    registerEmail.style.borderColor = '';
+                }
+            }
+        });
+    }
+    
+    if (registerPassword) {
+        registerPassword.addEventListener('blur', () => {
+            const password = registerPassword.value;
+            if (password && !isValidPassword(password)) {
+                registerPassword.style.borderColor = '#ff4444';
+            } else {
+                registerPassword.style.borderColor = '';
+            }
+        });
+        
+        registerPassword.addEventListener('input', () => {
+            if (registerPassword.style.borderColor === 'rgb(255, 68, 68)') {
+                const password = registerPassword.value;
+                if (!password || isValidPassword(password)) {
+                    registerPassword.style.borderColor = '';
+                }
+            }
+        });
+    }
+    
+    if (registerName) {
+        registerName.addEventListener('blur', () => {
+            const name = registerName.value.trim();
+            if (name && !isValidName(name)) {
+                registerName.style.borderColor = '#ff4444';
+            } else {
+                registerName.style.borderColor = '';
+            }
+        });
+        
+        registerName.addEventListener('input', () => {
+            if (registerName.style.borderColor === 'rgb(255, 68, 68)') {
+                const name = registerName.value.trim();
+                if (!name || isValidName(name)) {
+                    registerName.style.borderColor = '';
+                }
+            }
+        });
+    }
+    
+    // Валидация для формы входа
+    const loginEmail = document.getElementById('loginEmail');
+    const loginPassword = document.getElementById('loginPassword');
+    
+    if (loginEmail) {
+        loginEmail.addEventListener('blur', () => {
+            const email = loginEmail.value.trim();
+            if (email && !isValidEmail(email)) {
+                loginEmail.style.borderColor = '#ff4444';
+            } else {
+                loginEmail.style.borderColor = '';
+            }
+        });
+        
+        loginEmail.addEventListener('input', () => {
+            if (loginEmail.style.borderColor === 'rgb(255, 68, 68)') {
+                const email = loginEmail.value.trim();
+                if (!email || isValidEmail(email)) {
+                    loginEmail.style.borderColor = '';
+                }
+            }
+        });
+    }
+}
+
 // Инициализация при загрузке
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initAuthSession();
+        setupRealTimeValidation();
     });
 } else {
     initAuthSession();
+    setupRealTimeValidation();
 }
 
