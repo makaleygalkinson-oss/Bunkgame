@@ -670,6 +670,83 @@ body {
 .lobby-content {
     padding: 1rem 0;
     min-height: 200px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.lobby-loading,
+.lobby-empty,
+.lobby-error {
+    text-align: center;
+    padding: 2rem;
+    color: #a0a0a0;
+    font-size: 1rem;
+}
+
+.lobby-error {
+    color: #ffaaaa;
+}
+
+/* Карточка лобби */
+.lobby-card {
+    background: rgba(40, 40, 40, 0.6);
+    border: 1px solid rgba(150, 150, 150, 0.2);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.lobby-card:hover {
+    background: rgba(50, 50, 50, 0.8);
+    border-color: rgba(200, 200, 200, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.lobby-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(150, 150, 150, 0.2);
+}
+
+.lobby-card-header-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.lobby-card-label {
+    font-size: 0.85rem;
+    color: #a0a0a0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.lobby-card-value {
+    font-size: 1rem;
+    color: #00ff88;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    word-break: break-all;
+}
+
+.lobby-card-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.lobby-card-role {
+    font-size: 0.9rem;
+    color: #d0d0d0;
+    font-weight: 600;
 }
 
 /* Выбор ролей для создания лобби */
@@ -864,14 +941,17 @@ body {
         min-height: 44px;
     }
     
-    .lobby-header {
+    .lobby-card-header {
         flex-direction: column;
         gap: 1rem;
-        padding: 1rem;
     }
     
-    .lobby-header-item {
+    .lobby-card-header-item {
         width: 100%;
+    }
+    
+    .lobby-card {
+        padding: 1rem;
     }
     
     .role-option {

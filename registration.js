@@ -428,17 +428,73 @@ function closeLobbyModal() {
     modal.classList.add('hidden');
 }
 
-// Загрузка данных лобби (заглушка, можно расширить)
-function loadLobbyData() {
-    const creatorNameEl = document.getElementById('lobbyCreatorName');
-    const lobbyIdEl = document.getElementById('lobbyId');
+// Загрузка данных лобби
+async function loadLobbyData() {
+    const lobbyContent = document.getElementById('lobbyContent');
+    if (!lobbyContent) return;
     
-    // Показываем заглушку, можно будет заменить на реальные данные
-    if (creatorNameEl) {
-        creatorNameEl.textContent = '-';
-    }
-    if (lobbyIdEl) {
-        lobbyIdEl.textContent = '-';
+    try {
+        lobbyContent.innerHTML = '<p class="lobby-loading">Загрузка лобби...</p>';
+        
+        // Получаем все лобби из базы данных
+        const { data: lobbies, error } = await supabase
+            .from('lobbies')
+            .select('id, creator_name, active_role, created_at')
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error('Ошибка загрузки лобби:', error);
+            lobbyContent.innerHTML = '<p class="lobby-error">Ошибка загрузки лобби</p>';
+            return;
+        }
+        
+        if (!lobbies || lobbies.length === 0) {
+            lobbyContent.innerHTML = '<p class="lobby-empty">Лобби не найдены</p>';
+            return;
+        }
+        
+        // Очищаем контент
+        lobbyContent.innerHTML = '';
+        
+        // Создаем карточки для каждого лобби
+        lobbies.forEach((lobby) => {
+            const lobbyCard = document.createElement('div');
+            lobbyCard.className = 'lobby-card';
+            
+            const roleNames = {
+                'maniac': 'Маньяк',
+                'killer': 'Убийца',
+                'both': 'Маньяк и убийца',
+                'none': 'Без активных ролей'
+            };
+            
+            const roleName = roleNames[lobby.active_role] || lobby.active_role;
+            
+            lobbyCard.innerHTML = `
+                <div class="lobby-card-header">
+                    <div class="lobby-card-header-item">
+                        <span class="lobby-card-label">Ник создателя лобби</span>
+                        <span class="lobby-card-value">${lobby.creator_name || '-'}</span>
+                    </div>
+                    <div class="lobby-card-header-item">
+                        <span class="lobby-card-label">id Lobby</span>
+                        <span class="lobby-card-value">${lobby.id || '-'}</span>
+                    </div>
+                </div>
+                <div class="lobby-card-info">
+                    <span class="lobby-card-role">Роль: ${roleName}</span>
+                </div>
+            `;
+            
+            lobbyContent.appendChild(lobbyCard);
+        });
+        
+    } catch (err) {
+        console.error('Ошибка загрузки лобби:', err);
+        const lobbyContent = document.getElementById('lobbyContent');
+        if (lobbyContent) {
+            lobbyContent.innerHTML = '<p class="lobby-error">Ошибка загрузки лобби</p>';
+        }
     }
 }
 
