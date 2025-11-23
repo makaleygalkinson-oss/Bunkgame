@@ -448,14 +448,19 @@ async function connectToLobby(lobbyId) {
     }
 }
 
+// Переменная для хранения канала реалтайм
+let lobbyRealtimeChannel = null;
+
 // Функции для работы с модальным окном лобби
 function openLobbyModal() {
     const modal = document.getElementById('lobbyModal');
     if (modal) {
         modal.style.display = 'flex';
         modal.classList.remove('hidden');
-        // Здесь можно загрузить данные лобби
+        // Загружаем данные лобби
         loadLobbyData();
+        // Подписываемся на изменения в реальном времени
+        subscribeToLobbyUpdates();
     }
 }
 
@@ -465,6 +470,81 @@ function closeLobbyModal() {
     
     modal.style.display = 'none';
     modal.classList.add('hidden');
+    // Отписываемся от обновлений
+    unsubscribeFromLobbyUpdates();
+}
+
+// Подписка на изменения в таблице users для обновления количества игроков
+function subscribeToLobbyUpdates() {
+    // Отписываемся от предыдущей подписки, если она есть
+    unsubscribeFromLobbyUpdates();
+    
+    // Подписываемся на изменения в таблице users (все изменения, чтобы отслеживать вход/выход из лобби)
+    lobbyRealtimeChannel = supabase
+        .channel('lobby-players-updates')
+        .on('postgres_changes', 
+            { 
+                event: '*', // Все события (INSERT, UPDATE, DELETE)
+                schema: 'public',
+                table: 'users'
+            },
+            (payload) => {
+                console.log('Изменение в users:', payload);
+                // Обновляем количество игроков при любом изменении
+                // (вход/выход из лобби изменяет lobby_id)
+                updatePlayerCounts();
+            }
+        )
+        .subscribe();
+}
+
+// Отписка от обновлений
+function unsubscribeFromLobbyUpdates() {
+    if (lobbyRealtimeChannel) {
+        supabase.removeChannel(lobbyRealtimeChannel);
+        lobbyRealtimeChannel = null;
+    }
+}
+
+// Обновление только количества игроков без полной перезагрузки
+async function updatePlayerCounts() {
+    try {
+        // Получаем актуальное количество игроков в каждом лобби
+        const { data: users, error: usersError } = await supabase
+            .from('users')
+            .select('lobby_id');
+        
+        if (usersError) {
+            console.error('Ошибка загрузки игроков:', usersError);
+            return;
+        }
+        
+        // Подсчитываем количество игроков для каждого лобби
+        const playerCounts = {};
+        if (users) {
+            users.forEach(user => {
+                if (user.lobby_id) {
+                    playerCounts[user.lobby_id] = (playerCounts[user.lobby_id] || 0) + 1;
+                }
+            });
+        }
+        
+        // Обновляем количество игроков в каждой карточке
+        const lobbyCards = document.querySelectorAll('.lobby-card');
+        lobbyCards.forEach(card => {
+            const lobbyIdElement = card.querySelector('.lobby-card-value');
+            if (lobbyIdElement) {
+                const lobbyId = parseInt(lobbyIdElement.textContent);
+                const playerCount = playerCounts[lobbyId] || 0;
+                const playersElement = card.querySelector('.lobby-card-players');
+                if (playersElement) {
+                    playersElement.textContent = `Игроков: ${playerCount}`;
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Ошибка обновления количества игроков:', err);
+    }
 }
 
 // Загрузка данных лобби
@@ -705,4 +785,9 @@ window.createLobby = createLobby;
 
 // Проверяем пользователя при загрузке
 checkCurrentUser();
+
+// Отписываемся от обновлений при закрытии страницы
+window.addEventListener('beforeunload', () => {
+    unsubscribeFromLobbyUpdates();
+});
 
