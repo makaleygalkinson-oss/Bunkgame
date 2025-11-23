@@ -331,11 +331,11 @@ body {
     font-size: 1.1rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+        letter-spacing: 0.1em;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    margin-top: 1rem;
+        margin-top: 1rem;
     min-height: 50px;
 }
 
@@ -720,9 +720,11 @@ body {
 }
 
 .game-content {
-    max-width: 1400px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
     padding-top: 2rem;
+    padding-left: 0;
+    padding-right: 0;
     text-align: center;
 }
 
@@ -785,22 +787,27 @@ body {
     display: flex;
     gap: 2rem;
     align-items: flex-start;
-    justify-content: center;
-    margin: 2rem auto;
-    max-width: 1400px;
+    justify-content: flex-start;
+    margin: 2rem 0;
+    padding: 0;
+    max-width: 100%;
+    width: 100%;
 }
 
 .game-left-column {
     display: flex;
     flex-direction: column;
     gap: 2rem;
-    flex: 1;
-    max-width: 500px;
+    flex: 0 0 auto;
+    width: 500px;
+    margin-left: 0;
+    padding-left: 2rem;
 }
 
 .game-right-column {
-    flex: 1;
-    max-width: 600px;
+    flex: 0 0 auto;
+    width: 600px;
+    margin-left: auto;
 }
 
 /* Блок "Секретная Информация о бункере" */
@@ -874,9 +881,11 @@ body {
     border: 2px solid rgba(150, 150, 150, 0.3);
     border-radius: 20px;
     padding: 3rem;
+    margin: 0;
     text-align: left;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     min-height: 800px;
+    width: 100%;
 }
 
 .bunker-card-title {
