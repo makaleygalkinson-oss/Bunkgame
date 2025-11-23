@@ -1,4 +1,4 @@
-// Система регистрации
+// Система регистрации и логина
 
 // Валидация email
 function isValidEmail(email) {
@@ -16,6 +16,12 @@ function isValidName(name) {
     return name.trim().length >= 2 && name.trim().length <= 50;
 }
 
+// Простое хеширование пароля (для демонстрации)
+function hashPassword(password) {
+    // Простое хеширование через base64 (в продакшене используйте bcrypt или подобное)
+    return btoa(password + 'salt_key_2024').substring(0, 100);
+}
+
 // Очистка localStorage
 function clearLocalStorage() {
     try {
@@ -27,12 +33,13 @@ function clearLocalStorage() {
 }
 
 // Создание пользователя в базе данных
-async function createUserInDB(userId, email, name) {
+async function createUserInDB(userId, email, name, passwordHash) {
     try {
         const userData = {
             id: userId,
             email: email,
             name: name,
+            password_hash: passwordHash,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
@@ -42,12 +49,6 @@ async function createUserInDB(userId, email, name) {
             .insert([userData]);
         
         if (error) {
-            // Если ошибка из-за дубликата, это нормально
-            if (error.code === '23505' || error.message?.includes('duplicate key')) {
-                console.log('Пользователь уже существует в БД');
-                return null;
-            }
-            
             console.error('Ошибка создания пользователя в БД:', error);
             return error;
         }
@@ -119,47 +120,47 @@ function initRegistrationForm() {
         }
         
         try {
-            // Регистрация через Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: {
-                        name: name
-                    },
-                    emailRedirectTo: undefined // Отключаем подтверждение email
-                }
-            });
+            // Проверяем, существует ли пользователь с таким email или именем
+            const { data: existingUser, error: checkError } = await supabase
+                .from('users')
+                .select('id, email, name')
+                .or(`email.eq.${email},name.eq.${name}`)
+                .maybeSingle();
             
-            if (authError) {
+            if (checkError && checkError.code !== 'PGRST116') {
+                console.error('Ошибка проверки пользователя:', checkError);
+                throw new Error('Ошибка при проверке данных. Попробуйте позже.');
+            }
+            
+            if (existingUser) {
+                if (existingUser.email === email) {
+                    throw new Error('Пользователь с таким email уже зарегистрирован');
+                }
+                if (existingUser.name === name) {
+                    throw new Error('Пользователь с таким именем уже зарегистрирован');
+                }
+            }
+            
+            // Генерируем уникальный ID для пользователя
+            const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            // Хешируем пароль
+            const passwordHash = hashPassword(password);
+            
+            // Создаем запись пользователя в базе данных
+            const dbError = await createUserInDB(userId, email, name, passwordHash);
+            
+            if (dbError) {
                 // Обработка различных ошибок
                 let errorMessage = 'Ошибка при регистрации';
                 
-                if (authError.message.includes('User already registered') || 
-                    authError.message.includes('already registered') ||
-                    authError.message.includes('already exists')) {
-                    errorMessage = 'Пользователь с таким email уже зарегистрирован';
-                } else if (authError.message.includes('Invalid email')) {
-                    errorMessage = 'Некорректный email адрес';
-                } else if (authError.message.includes('Password')) {
-                    errorMessage = 'Пароль не соответствует требованиям';
-                } else if (authError.message) {
-                    errorMessage = authError.message;
+                if (dbError.code === '23505' || dbError.message?.includes('duplicate key')) {
+                    errorMessage = 'Пользователь с таким email или именем уже зарегистрирован';
+                } else if (dbError.message) {
+                    errorMessage = dbError.message;
                 }
                 
                 throw new Error(errorMessage);
-            }
-            
-            if (!authData || !authData.user) {
-                throw new Error('Не удалось создать пользователя. Попробуйте позже.');
-            }
-            
-            // Создаем запись пользователя в базе данных
-            const dbError = await createUserInDB(authData.user.id, email, name);
-            
-            if (dbError) {
-                console.warn('Предупреждение при создании пользователя в БД:', dbError);
-                // Не прерываем процесс, так как пользователь уже создан в Auth
             }
             
             // Очищаем localStorage
@@ -169,10 +170,8 @@ function initRegistrationForm() {
             messageEl.className = 'form-message success';
             e.target.reset();
             
-            // Закрываем модальное окно через 2 секунды
-            setTimeout(() => {
-                closeRegisterModal();
-            }, 2000);
+            // Закрываем модальное окно сразу
+            closeRegisterModal();
         } catch (error) {
             console.error('Ошибка регистрации:', error);
             messageEl.textContent = error.message || 'Ошибка при регистрации. Попробуйте позже.';
@@ -184,7 +183,130 @@ function initRegistrationForm() {
     });
 }
 
-// Функции для работы с модальным окном
+// Инициализация формы логина
+function initLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    if (!loginForm) {
+        console.error('❌ Форма логина не найдена');
+        return;
+    }
+    
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const messageEl = document.getElementById('loginMessage');
+        const submitBtn = e.target.querySelector('.submit-btn');
+        if (!messageEl || !submitBtn) return;
+        
+        const originalText = submitBtn.textContent;
+        messageEl.textContent = '';
+        messageEl.className = 'form-message';
+        submitBtn.textContent = 'Вход...';
+        submitBtn.disabled = true;
+        
+        const name = document.getElementById('loginName').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        
+        // Валидация полей
+        if (!name || !password) {
+            messageEl.textContent = 'Пожалуйста, заполните все поля';
+            messageEl.className = 'form-message error';
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+        
+        if (!isValidName(name)) {
+            messageEl.textContent = 'Имя должно содержать от 2 до 50 символов';
+            messageEl.className = 'form-message error';
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+        
+        try {
+            // Ищем пользователя по имени
+            const { data: user, error: findError } = await supabase
+                .from('users')
+                .select('id, name, email, password_hash')
+                .eq('name', name)
+                .maybeSingle();
+            
+            if (findError && findError.code !== 'PGRST116') {
+                console.error('Ошибка поиска пользователя:', findError);
+                throw new Error('Ошибка при входе. Попробуйте позже.');
+            }
+            
+            if (!user) {
+                throw new Error('Пользователь с таким именем не найден');
+            }
+            
+            // Проверяем пароль
+            const passwordHash = hashPassword(password);
+            if (user.password_hash !== passwordHash) {
+                throw new Error('Неверный пароль');
+            }
+            
+            // Сохраняем информацию о пользователе в sessionStorage
+            sessionStorage.setItem('currentUser', JSON.stringify({
+                id: user.id,
+                name: user.name,
+                email: user.email
+            }));
+            
+            messageEl.textContent = 'Вход выполнен успешно!';
+            messageEl.className = 'form-message success';
+            e.target.reset();
+            
+            // Закрываем модальное окно сразу
+            closeLoginModal();
+            
+            // Обновляем UI
+            updateAuthUI(user);
+            
+            // Перезагружаем страницу через небольшую задержку
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        } catch (error) {
+            console.error('Ошибка входа:', error);
+            messageEl.textContent = error.message || 'Ошибка при входе. Проверьте имя и пароль.';
+            messageEl.className = 'form-message error';
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// Обновление UI после входа
+function updateAuthUI(user) {
+    const registerBtn = document.getElementById('registerBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    
+    if (registerBtn) {
+        registerBtn.textContent = user.name;
+        registerBtn.style.cursor = 'default';
+        registerBtn.onclick = null;
+        registerBtn.style.opacity = '0.8';
+    }
+    
+    if (loginBtn) {
+        loginBtn.textContent = 'Выйти';
+        loginBtn.onclick = () => {
+            sessionStorage.removeItem('currentUser');
+            location.reload();
+        };
+    }
+}
+
+// Функция выхода
+function logout() {
+    sessionStorage.removeItem('currentUser');
+    location.reload();
+}
+
+// Функции для работы с модальными окнами
 function openRegisterModal() {
     const modal = document.getElementById('registerModal');
     if (modal) {
@@ -210,16 +332,77 @@ function closeRegisterModal() {
     }
 }
 
+function openLoginModal() {
+    const modal = document.getElementById('loginModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+    }
+}
+
+function closeLoginModal() {
+    const modal = document.getElementById('loginModal');
+    if (!modal) return;
+    
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+    
+    const form = document.getElementById('loginForm');
+    if (form) form.reset();
+    
+    const messageEl = document.getElementById('loginMessage');
+    if (messageEl) {
+        messageEl.textContent = '';
+        messageEl.className = 'form-message';
+    }
+}
+
 // Инициализация при загрузке
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initRegistrationForm();
+        initLoginForm();
     });
 } else {
     initRegistrationForm();
+    initLoginForm();
+}
+
+// Проверка текущего пользователя при загрузке
+function checkCurrentUser() {
+    const userStr = sessionStorage.getItem('currentUser');
+    if (userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            updateAuthUI(user);
+        } catch (err) {
+            console.error('Ошибка парсинга пользователя:', err);
+            sessionStorage.removeItem('currentUser');
+        }
+    } else {
+        // Если пользователь не авторизован, показываем кнопки регистрации и входа
+        const registerBtn = document.getElementById('registerBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        if (registerBtn) {
+            registerBtn.textContent = 'Register';
+            registerBtn.style.cursor = 'pointer';
+            registerBtn.style.opacity = '1';
+        }
+        
+        if (loginBtn) {
+            loginBtn.textContent = 'Login';
+            loginBtn.style.cursor = 'pointer';
+        }
+    }
 }
 
 // Экспорт функций
 window.openRegisterModal = openRegisterModal;
 window.closeRegisterModal = closeRegisterModal;
+window.openLoginModal = openLoginModal;
+window.closeLoginModal = closeLoginModal;
+
+// Проверяем пользователя при загрузке
+checkCurrentUser();
 

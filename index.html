@@ -9,19 +9,19 @@
     <title>Abstract Games</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div class="visitor-counter">
-        <div class="counter-content">
-            <span class="live-indicator"></span>
-            <span class="counter-text">Онлайн LIVE:</span>
-            <span class="counter-number" id="visitorCount">0</span>
-        </div>
+    <div class="auth-buttons">
+        <button class="auth-btn" id="loginBtn">Login</button>
+        <button class="auth-btn" id="registerBtn">Register</button>
     </div>
-    
-    <!-- Кнопка регистрации -->
-    <div class="register-button-container">
-        <button class="register-btn" id="registerBtn">Регистрация</button>
+    <div class="visitor-counter">
+        <div class="counter-label">
+            <span class="live-indicator"></span>
+            Онлайн LIVE
+        </div>
+        <div class="counter-number" id="visitorCount">0</div>
     </div>
     <div class="canvas">
         <div class="shapes-container">
@@ -41,6 +41,7 @@
                 </h1>
                 <div class="subtitle">ВИЗУАЛЬНАЯ АБСТРАКЦИЯ</div>
             </header>
+
 
             <footer class="main-footer">
                 <div class="footer-pattern">
@@ -87,20 +88,49 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Модальное окно входа -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeLoginModal">&times;</span>
+            <h2 class="modal-title">Вход</h2>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="loginName">Имя (ник)</label>
+                    <input type="text" id="loginName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Пароль</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+                <div class="form-message" id="loginMessage"></div>
+                <button type="submit" class="submit-btn">Войти</button>
+            </form>
+        </div>
+    </div>
+
     <script src="supabase-config.js"></script>
     <script src="registration.js"></script>
     <script src="counter.js"></script>
     <script>
-        // Инициализация кнопки регистрации
+        // Инициализация кнопок
         document.addEventListener('DOMContentLoaded', () => {
             const registerBtn = document.getElementById('registerBtn');
+            const loginBtn = document.getElementById('loginBtn');
             const closeRegisterModalBtn = document.getElementById('closeRegisterModal');
+            const closeLoginModalBtn = document.getElementById('closeLoginModal');
             
             if (registerBtn) {
                 registerBtn.addEventListener('click', () => {
                     if (typeof openRegisterModal === 'function') {
                         openRegisterModal();
+                    }
+                });
+            }
+            
+            if (loginBtn) {
+                loginBtn.addEventListener('click', () => {
+                    if (typeof openLoginModal === 'function') {
+                        openLoginModal();
                     }
                 });
             }
@@ -113,8 +143,18 @@
                 });
             }
             
+            if (closeLoginModalBtn) {
+                closeLoginModalBtn.addEventListener('click', () => {
+                    if (typeof closeLoginModal === 'function') {
+                        closeLoginModal();
+                    }
+                });
+            }
+            
             // Закрытие при клике вне модального окна
             const registerModal = document.getElementById('registerModal');
+            const loginModal = document.getElementById('loginModal');
+            
             if (registerModal) {
                 registerModal.addEventListener('click', (e) => {
                     if (e.target === registerModal) {
@@ -124,7 +164,18 @@
                     }
                 });
             }
+            
+            if (loginModal) {
+                loginModal.addEventListener('click', (e) => {
+                    if (e.target === loginModal) {
+                        if (typeof closeLoginModal === 'function') {
+                            closeLoginModal();
+                        }
+                    }
+                });
+            }
         });
     </script>
 </body>
 </html>
+
