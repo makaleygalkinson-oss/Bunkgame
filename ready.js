@@ -23,11 +23,22 @@ function initReadySystem() {
         readySystemInitialized = true;
     }
     
+    // Всегда проверяем кнопку START GAME при инициализации
+    // Это важно при возврате на страницу после выхода из лобби
+    setTimeout(async () => {
+        const currentUserId = getCurrentUserId();
+        if (currentUserId) {
+            console.log('🔄 Проверка кнопки START GAME при инициализации');
+            await checkAdminForStartButton();
+        }
+    }, 100);
+    
     // Проверяем авторизацию
     supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (session && session.user) {
+            const currentUserId = session.user.id;
             if (typeof window !== 'undefined') {
-                window.currentUserId = session.user.id;
+                window.currentUserId = currentUserId;
             }
             console.log('✅ Пользователь авторизован');
             
@@ -65,6 +76,7 @@ function initReadySystem() {
     }).catch(err => {
         console.error('❌ Ошибка проверки сессии:', err);
         updateReadyCountVisibility(); // Скрываем счётчик при ошибке
+        hideStartGameButton();
     });
 
     // Отслеживание изменений авторизации
@@ -625,11 +637,39 @@ function subscribeToReadyUpdates() {
 async function checkAdminForStartButton() {
     const currentUserId = getCurrentUserId();
     if (!currentUserId) {
+        console.log('ℹ️ Пользователь не авторизован, скрываем кнопку START GAME');
         hideStartGameButton();
         return;
     }
     
-    // Показываем кнопку всем авторизованным пользователям
+    // Дополнительная проверка: убеждаемся, что пользователь не в лобби
+    try {
+        const { data: userData, error } = await supabase
+            .from('users')
+            .select('lobby_id')
+            .eq('id', currentUserId)
+            .maybeSingle();
+        
+        if (error) {
+            console.warn('⚠️ Ошибка проверки lobby_id для кнопки START GAME:', error);
+            // В случае ошибки всё равно показываем кнопку, если пользователь авторизован
+            showStartGameButton();
+            return;
+        }
+        
+        // Если пользователь в лобби (lobby_id > 0), не показываем кнопку
+        if (userData && userData.lobby_id > 0) {
+            console.log('ℹ️ Пользователь в лобби (lobby_id =', userData.lobby_id, '), скрываем кнопку START GAME');
+            hideStartGameButton();
+            return;
+        }
+    } catch (err) {
+        console.warn('⚠️ Ошибка при проверке статуса лобби:', err);
+        // В случае ошибки показываем кнопку, если пользователь авторизован
+    }
+    
+    // Показываем кнопку всем авторизованным пользователям, которые не в лобби
+    console.log('✅ Показываем кнопку START GAME для авторизованного пользователя');
     showStartGameButton();
 }
 
@@ -863,6 +903,34 @@ function startReadySystem() {
     // Показываем кнопку сразу (даже если не авторизован)
     showReadySection();
     initReadySystem();
+    
+    // Дополнительная проверка при полной загрузке страницы
+    // Это важно при возврате на страницу после выхода из лобби
+    window.addEventListener('load', async () => {
+        if (typeof supabase !== 'undefined') {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session && session.user) {
+                if (typeof window !== 'undefined') {
+                    window.currentUserId = session.user.id;
+                }
+                const currentUserId = getCurrentUserId();
+                if (currentUserId) {
+                    // Проверяем, что пользователь не в лобби
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('lobby_id')
+                        .eq('id', currentUserId)
+                        .maybeSingle();
+                    
+                    // Если пользователь не в лобби (lobby_id = 0), показываем кнопку START GAME
+                    if (!userData || userData.lobby_id === 0) {
+                        console.log('🔄 Страница полностью загружена, проверяем кнопку START GAME');
+                        await checkAdminForStartButton();
+                    }
+                }
+            }
+        }
+    });
 }
 
 // Запускаем при загрузке DOM
@@ -884,6 +952,56 @@ setTimeout(() => {
     showReadySection(); // Убеждаемся, что кнопка видна
     if (typeof supabase !== 'undefined') {
         startReadySystem();
+        // Дополнительная проверка кнопки START GAME при возврате на страницу
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
+            if (session && session.user) {
+                if (typeof window !== 'undefined') {
+                    window.currentUserId = session.user.id;
+                }
+                // Проверяем, что пользователь не в лобби
+                const currentUserId = getCurrentUserId();
+                if (currentUserId) {
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('lobby_id')
+                        .eq('id', currentUserId)
+                        .maybeSingle();
+                    
+                    // Если пользователь не в лобби (lobby_id = 0), показываем кнопку START GAME
+                    if (!userData || userData.lobby_id === 0) {
+                        console.log('🔄 Пользователь вернулся на главную, проверяем кнопку START GAME');
+                        await checkAdminForStartButton();
+                    }
+                }
+            }
+        });
     }
 }, 500);
+
+// Дополнительная проверка при фокусе на странице (когда пользователь возвращается)
+window.addEventListener('focus', () => {
+    if (typeof supabase !== 'undefined') {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
+            if (session && session.user) {
+                if (typeof window !== 'undefined') {
+                    window.currentUserId = session.user.id;
+                }
+                const currentUserId = getCurrentUserId();
+                if (currentUserId) {
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('lobby_id')
+                        .eq('id', currentUserId)
+                        .maybeSingle();
+                    
+                    // Если пользователь не в лобби, показываем кнопку START GAME
+                    if (!userData || userData.lobby_id === 0) {
+                        console.log('🔄 Страница в фокусе, проверяем кнопку START GAME');
+                        await checkAdminForStartButton();
+                    }
+                }
+            }
+        });
+    }
+});
 
