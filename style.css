@@ -351,6 +351,42 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
+/* Кнопка АДМИНКУ */
+.admin-btn {
+    background: rgba(100, 20, 20, 0.9);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(200, 50, 50, 0.7);
+    border-radius: 12px;
+    padding: 14px 32px;
+    color: #ffaaaa;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(200, 50, 50, 0.3);
+    margin-top: 1rem;
+    min-height: 50px;
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.admin-btn:hover {
+    background: rgba(120, 30, 30, 0.95);
+    border-color: rgba(255, 80, 80, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(200, 50, 50, 0.5);
+}
+
+.admin-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(200, 50, 50, 0.4);
+}
+
 .main-footer {
     margin-top: auto;
     padding-bottom: 2rem;
@@ -1090,6 +1126,13 @@ body {
     }
     
     .create-lobby-btn {
+        padding: 12px 24px;
+        font-size: 1rem;
+        margin-top: 0.8rem;
+        min-height: 44px;
+    }
+    
+    .admin-btn {
         padding: 12px 24px;
         font-size: 1rem;
         margin-top: 0.8rem;

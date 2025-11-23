@@ -240,7 +240,7 @@ function initLoginForm() {
             // Ищем пользователя по имени (без учета регистра и пробелов)
             const { data: users, error: findError } = await supabase
                 .from('users')
-                .select('id, name, email, password_hash');
+                .select('id, name, email, password_hash, is_admin');
             
             if (findError) {
                 console.error('Ошибка поиска пользователя:', findError);
@@ -263,11 +263,15 @@ function initLoginForm() {
                 throw new Error('Неверный пароль');
             }
             
+            // Проверяем, является ли пользователь админом из БД
+            const isAdmin = user.is_admin === true || user.is_admin === 1;
+            
             // Сохраняем информацию о пользователе в sessionStorage
             sessionStorage.setItem('currentUser', JSON.stringify({
                 id: user.id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                isAdmin: isAdmin
             }));
             
             messageEl.textContent = 'Вход выполнен успешно!';
@@ -295,10 +299,32 @@ function initLoginForm() {
     });
 }
 
+// Проверка, является ли пользователь админом (из БД)
+async function checkIfAdminFromDB(userId) {
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('is_admin')
+            .eq('id', userId)
+            .maybeSingle();
+        
+        if (error) {
+            console.error('Ошибка проверки админа:', error);
+            return false;
+        }
+        
+        return user?.is_admin === true || user?.is_admin === 1;
+    } catch (err) {
+        console.error('Ошибка проверки админа:', err);
+        return false;
+    }
+}
+
 // Обновление UI после входа
 function updateAuthUI(user) {
     const registerBtn = document.getElementById('registerBtn');
     const loginBtn = document.getElementById('loginBtn');
+    const adminBtn = document.getElementById('adminBtn');
     
     // Кнопка Register показывает имя игрока
     if (registerBtn) {
@@ -315,6 +341,20 @@ function updateAuthUI(user) {
             sessionStorage.removeItem('currentUser');
             location.reload();
         };
+    }
+    
+    // Показываем кнопку АДМИНКУ только для админов
+    if (adminBtn) {
+        if (user.isAdmin) {
+            adminBtn.style.display = 'block';
+            // Пока без функционала - просто кнопка
+            adminBtn.onclick = () => {
+                console.log('Админка открыта (функционал пока не реализован)');
+                // Здесь будет функционал админки
+            };
+        } else {
+            adminBtn.style.display = 'none';
+        }
     }
 }
 
@@ -387,17 +427,28 @@ if (document.readyState === 'loading') {
 }
 
 // Проверка текущего пользователя при загрузке
-function checkCurrentUser() {
+async function checkCurrentUser() {
     const userStr = sessionStorage.getItem('currentUser');
     if (userStr) {
         try {
             const user = JSON.parse(userStr);
+            // Если isAdmin не установлен, проверяем заново из БД
+            if (user.isAdmin === undefined) {
+                user.isAdmin = await checkIfAdminFromDB(user.id);
+                // Обновляем в sessionStorage
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+            }
             updateAuthUI(user);
         } catch (err) {
             console.error('Ошибка парсинга пользователя:', err);
             sessionStorage.removeItem('currentUser');
         }
     } else {
+        // Скрываем кнопку админки, если пользователь не авторизован
+        const adminBtn = document.getElementById('adminBtn');
+        if (adminBtn) {
+            adminBtn.style.display = 'none';
+        }
         // Если пользователь не авторизован, показываем кнопки регистрации и входа
         const registerBtn = document.getElementById('registerBtn');
         const loginBtn = document.getElementById('loginBtn');
@@ -865,7 +916,9 @@ window.closeCreateLobbyModal = closeCreateLobbyModal;
 window.createLobby = createLobby;
 
 // Проверяем пользователя при загрузке
-checkCurrentUser();
+(async () => {
+    await checkCurrentUser();
+})();
 
 // Отписываемся от обновлений при закрытии страницы
 window.addEventListener('beforeunload', () => {
