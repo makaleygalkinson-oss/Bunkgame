@@ -294,6 +294,7 @@ function updateAuthUI(user) {
     const registerBtn = document.getElementById('registerBtn');
     const loginBtn = document.getElementById('loginBtn');
     
+    // Кнопка Register показывает имя игрока
     if (registerBtn) {
         registerBtn.textContent = user.name;
         registerBtn.style.cursor = 'default';
@@ -301,6 +302,7 @@ function updateAuthUI(user) {
         registerBtn.style.opacity = '0.8';
     }
     
+    // Кнопка Login меняется на "Выйти"
     if (loginBtn) {
         loginBtn.textContent = 'Выйти';
         loginBtn.onclick = () => {
@@ -407,11 +409,46 @@ function checkCurrentUser() {
     }
 }
 
+// Функции для работы с модальным окном лобби
+function openLobbyModal() {
+    const modal = document.getElementById('lobbyModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        // Здесь можно загрузить данные лобби
+        loadLobbyData();
+    }
+}
+
+function closeLobbyModal() {
+    const modal = document.getElementById('lobbyModal');
+    if (!modal) return;
+    
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+}
+
+// Загрузка данных лобби (заглушка, можно расширить)
+function loadLobbyData() {
+    const creatorNameEl = document.getElementById('lobbyCreatorName');
+    const lobbyIdEl = document.getElementById('lobbyId');
+    
+    // Показываем заглушку, можно будет заменить на реальные данные
+    if (creatorNameEl) {
+        creatorNameEl.textContent = '-';
+    }
+    if (lobbyIdEl) {
+        lobbyIdEl.textContent = '-';
+    }
+}
+
 // Экспорт функций
 window.openRegisterModal = openRegisterModal;
 window.closeRegisterModal = closeRegisterModal;
 window.openLoginModal = openLoginModal;
 window.closeLoginModal = closeLoginModal;
+window.openLobbyModal = openLobbyModal;
+window.closeLobbyModal = closeLobbyModal;
 
 // Проверяем пользователя при загрузке
 checkCurrentUser();
