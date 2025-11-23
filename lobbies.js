@@ -129,12 +129,12 @@ async function updateLobbiesList() {
     try {
         lobbiesList.innerHTML = '<p class="lobbies-loading">Загрузка лобби...</p>';
         
-        // Получаем все активные лобби (игры, которые начались)
-        // Лобби = группы игроков из ready_players, которые находятся в игре
-        const { data: readyPlayers, error } = await supabase
-            .from('ready_players')
-            .select('user_id, ready_at')
-            .order('ready_at', { ascending: true });
+        // Получаем все активные лобби (игроки с lobby_id > 0)
+        const { data: usersInLobbies, error } = await supabase
+            .from('users')
+            .select('id, email, name, lobby_id')
+            .gt('lobby_id', 0)
+            .order('lobby_id', { ascending: true });
         
         if (error) {
             console.error('Ошибка получения лобби:', error);
@@ -142,45 +142,50 @@ async function updateLobbiesList() {
             return;
         }
         
-        // Группируем игроков по времени готовности (в пределах 5 минут = одно лобби)
-        const lobbies = groupPlayersIntoLobbies(readyPlayers || []);
-        
-        if (lobbies.length === 0) {
+        if (!usersInLobbies || usersInLobbies.length === 0) {
             lobbiesList.innerHTML = '<p class="lobbies-empty">Активных лобби нет</p>';
             return;
         }
         
-        // Получаем информацию о пользователях
-        const userIds = readyPlayers.map(p => p.user_id);
-        const { data: usersData } = await supabase
-            .from('users')
-            .select('id, email, name')
-            .in('id', userIds);
+        // Группируем игроков по lobby_id
+        const lobbiesMap = new Map();
+        usersInLobbies.forEach(user => {
+            const lobbyId = user.lobby_id;
+            if (!lobbiesMap.has(lobbyId)) {
+                lobbiesMap.set(lobbyId, []);
+            }
+            lobbiesMap.get(lobbyId).push(user);
+        });
         
         // Отображаем лобби
         lobbiesList.innerHTML = '';
         
-        lobbies.forEach((lobby, index) => {
+        const MAX_PLAYERS = 16; // Максимальное количество игроков в лобби
+        
+        lobbiesMap.forEach((players, lobbyId) => {
             const lobbyCard = document.createElement('div');
             lobbyCard.className = 'lobby-card';
             
-            const lobbyPlayers = lobby.players.map(playerId => {
-                const user = usersData?.find(u => u.id === playerId);
-                return user?.name || user?.email || 'Игрок';
+            // Получаем ники игроков
+            const playerNames = players.map(player => {
+                return player.name || player.email || 'Игрок';
             });
             
             const userId = (typeof window !== 'undefined' && window.currentUserId) || null;
-            const isUserInLobby = userId && lobby.players.includes(userId);
+            const isUserInLobby = userId && players.some(p => p.id === userId);
+            
+            const playersCount = players.length;
+            const playersCountText = `${playersCount}/${MAX_PLAYERS}`;
             
             lobbyCard.innerHTML = `
                 <div class="lobby-header">
-                    <h3 class="lobby-title">Лобби ${index + 1}</h3>
-                    <span class="lobby-players-count">Игроков: ${lobby.players.length}</span>
+                    <span class="lobby-count-badge">${playersCountText}</span>
+                    <h3 class="lobby-title">Лобби ${lobbyId}</h3>
                 </div>
                 <div class="lobby-players">
-                    <p class="lobby-players-list">${lobbyPlayers.join(', ')}</p>
+                    <p class="lobby-players-list">${playerNames.join(', ')}</p>
                 </div>
-                ${isUserInLobby ? '<button class="lobby-connect-btn" data-lobby-id="' + lobby.id + '">CONNECT</button>' : ''}
+                ${isUserInLobby ? '<button class="lobby-connect-btn" data-lobby-id="' + lobbyId + '">CONNECT</button>' : ''}
             `;
             
             // Обработчик кнопки CONNECT
@@ -202,27 +207,10 @@ async function updateLobbiesList() {
     }
 }
 
-// Группировка игроков в лобби
+// Группировка игроков в лобби (не используется, заменено на группировку по lobby_id)
 function groupPlayersIntoLobbies(players) {
-    if (!players || players.length === 0) return [];
-    
-    // Все игроки в ready_players считаются одним лобби (игра началась)
-    // Лобби создается когда игра запускается (все нажали READY и админ нажал START GAME)
-    // Все игроки в ready_players находятся в одном активном лобби
-    
-    if (players.length < 4) {
-        // Если игроков меньше 4 - лобби еще не создано (игра не началась)
-        return [];
-    }
-    
-    // Создаем одно лобби со всеми игроками
-    const lobby = {
-        id: 'lobby_' + Date.now(),
-        players: players.map(p => p.user_id),
-        startTime: Math.min(...players.map(p => new Date(p.ready_at).getTime()))
-    };
-    
-    return [lobby];
+    // Эта функция больше не используется, так как лобби теперь определяются по lobby_id в таблице users
+    return [];
 }
 
 // Подписка на обновления лобби
@@ -234,7 +222,8 @@ function subscribeToLobbiesUpdates() {
                 { 
                     event: '*', 
                     schema: 'public', 
-                    table: 'ready_players' 
+                    table: 'users',
+                    filter: 'lobby_id=gt.0'
                 }, 
                 (payload) => {
                     // Обновляем список лобби при изменениях

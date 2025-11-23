@@ -184,20 +184,21 @@ function setupReadySystem() {
         await toggleReadyStatus();
     });
     
-    // Обработчик кнопки START GAME (только для админа)
+    // Обработчик кнопки START GAME
     const startGameBtn = document.getElementById('startGameBtn');
     if (startGameBtn) {
         startGameBtn.addEventListener('click', async () => {
-            if (!isAdmin) {
-                alert('Только администратор может начать игру');
+            const currentUserId = getCurrentUserId();
+            if (!currentUserId) {
+                alert('Необходимо войти в систему');
                 return;
             }
             
             // Проверяем количество готовых игроков
             const playerCount = await getReadyPlayersCount();
             
-            if (playerCount < 4) {
-                alert(`❌ Ошибка: Недостаточно игроков!\n\nГотовых игроков: ${playerCount}\nМинимум требуется: 4`);
+            if (playerCount < 1) {
+                alert(`❌ Ошибка: Нет готовых игроков!\n\nГотовых игроков: ${playerCount}`);
                 return;
             }
             
@@ -206,7 +207,12 @@ function setupReadySystem() {
                 return;
             }
             
-            // Если проверка пройдена - начинаем игру (перекидываем всех готовых)
+            // Подтверждение начала игры
+            if (!confirm(`Начать игру с ${playerCount} игроком(ами)?\n\nВсе готовые игроки будут добавлены в лобби.`)) {
+                return;
+            }
+            
+            // Если проверка пройдена - начинаем игру (создаем лобби для всех готовых)
             await startGame(false, true); // false = с проверками, true = перекинуть всех готовых
         });
     }
@@ -585,7 +591,7 @@ function subscribeToReadyUpdates() {
         }
 }
 
-// Проверка админа для показа кнопки START GAME
+// Проверка для показа кнопки START GAME (показываем всем авторизованным)
 async function checkAdminForStartButton() {
     const currentUserId = getCurrentUserId();
     if (!currentUserId) {
@@ -593,31 +599,8 @@ async function checkAdminForStartButton() {
         return;
     }
     
-    try {
-        const { data, error } = await supabase
-            .from('users')
-            .select('is_admin')
-            .eq('id', currentUserId)
-            .maybeSingle();
-        
-        if (!error && data) {
-            const adminValue = data.is_admin;
-            isAdmin = (typeof adminValue === 'boolean' && adminValue === true) ||
-                     (typeof adminValue === 'string' && (adminValue.toLowerCase() === 'true' || adminValue === '1')) ||
-                     (typeof adminValue === 'number' && adminValue === 1);
-            
-            if (isAdmin) {
-                showStartGameButton();
-            } else {
-                hideStartGameButton();
-            }
-        } else {
-            hideStartGameButton();
-        }
-    } catch (err) {
-        console.error('❌ Ошибка проверки админа:', err);
-        hideStartGameButton();
-    }
+    // Показываем кнопку всем авторизованным пользователям
+    showStartGameButton();
 }
 
 // Показать кнопку START GAME
@@ -720,25 +703,38 @@ async function sendGameStartBroadcast(channel, selectedRoles) {
     try {
         console.log('📤 Отправляем broadcast сообщение...');
         
-        // Получаем всех готовых игроков и устанавливаем им lobby_id = 1
+        // Получаем всех готовых игроков
         const { data: readyPlayers, error: playersError } = await supabase
             .from('ready_players')
             .select('user_id');
         
         if (!playersError && readyPlayers && readyPlayers.length > 0) {
             const userIds = readyPlayers.map(p => p.user_id);
-            console.log('🎮 Устанавливаем lobby_id = 1 для игроков:', userIds);
             
-            // Устанавливаем lobby_id = 1 для всех готовых игроков
+            // Находим максимальный lobby_id и создаем новое лобби
+            const { data: maxLobbyData, error: maxError } = await supabase
+                .from('users')
+                .select('lobby_id')
+                .order('lobby_id', { ascending: false })
+                .limit(1);
+            
+            let newLobbyId = 1;
+            if (!maxError && maxLobbyData && maxLobbyData.length > 0) {
+                newLobbyId = (maxLobbyData[0].lobby_id || 0) + 1;
+            }
+            
+            console.log('🎮 Создаем новое лобби с ID:', newLobbyId, 'для игроков:', userIds);
+            
+            // Устанавливаем новый lobby_id для всех готовых игроков
             const { error: updateError } = await supabase
                 .from('users')
-                .update({ lobby_id: 1 })
+                .update({ lobby_id: newLobbyId })
                 .in('id', userIds);
             
             if (updateError) {
                 console.error('❌ Ошибка установки lobby_id:', updateError);
             } else {
-                console.log('✅ lobby_id = 1 установлен для всех готовых игроков');
+                console.log(`✅ lobby_id = ${newLobbyId} установлен для всех готовых игроков`);
             }
         }
         
