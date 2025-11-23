@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Игра "Бункер" - Abstract Games</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="canvas game-canvas">
+        <div class="shapes-container">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+            <div class="shape shape-5"></div>
+            <div class="shape shape-6"></div>
+        </div>
+
+        <!-- Игроков в игре - левый верхний угол -->
+        <div class="game-players-counter">
+            <span class="players-label">Игроков в игре:</span>
+            <span class="players-value" id="playersInGame">0</span>
+        </div>
+
+        <!-- Кнопка выхода из лобби - правый верхний угол -->
+        <div class="game-exit-section">
+            <button class="game-exit-btn" id="exitGameBtn">Выйти</button>
+        </div>
+
+        <div class="content-wrapper game-content-wrapper">
+            <header class="game-header">
+                <h1 class="game-main-title">
+                    <span class="title-part">БУНКЕР</span>
+                </h1>
+                <div class="game-subtitle">ИГРА НАЧАЛАСЬ</div>
+                
+                <!-- Раунд - по центру под БУНКЕР -->
+                <div class="game-round">
+                    <span class="round-label">Раунд:</span>
+                    <span class="round-value" id="currentRound">1</span>
+                </div>
+            </header>
+
+            <main class="game-main">
+                <!-- Карточка бункера - слева -->
+                <div class="bunker-card-section">
+                    <h2 class="bunker-card-title">Карточка бункера</h2>
+                    <div class="bunker-card" id="bunkerCard">
+                        <div class="bunker-card-content">
+                            <p class="bunker-placeholder">Информация о бункере появится здесь</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Карточки игроков - справа -->
+                <div class="players-cards-section">
+                    <h2 class="players-cards-title">Игроки</h2>
+                    <div class="players-cards-container" id="playersCardsContainer">
+                        <!-- Карточки игроков будут добавлены динамически -->
+                    </div>
+                </div>
+
+                <div class="game-actions" id="gameActions" style="display: none;">
+                    <button class="game-action-btn" id="actionBtn">Действие</button>
+                </div>
+            </main>
+
+            <footer class="game-footer">
+                <div class="footer-pattern">
+                    <div class="pattern-line"></div>
+                    <div class="pattern-line"></div>
+                    <div class="pattern-line"></div>
+                </div>
+            </footer>
+        </div>
+
+        <div class="particles-layer">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+    </div>
+
+    <script src="supabase-config.js"></script>
+    <script>
+        // Ждем полной загрузки страницы
+        window.addEventListener('load', () => {
+            console.log('📄 Страница полностью загружена');
+            // Небольшая задержка для гарантии, что все скрипты загружены
+            setTimeout(() => {
+                if (typeof supabase === 'undefined') {
+                    console.error('❌ Supabase не загружен после загрузки страницы!');
+                } else {
+                    console.log('✅ Supabase доступен');
+                }
+            }, 100);
+        });
+    </script>
+    <script src="game.js"></script>
+</body>
+</html>
+
