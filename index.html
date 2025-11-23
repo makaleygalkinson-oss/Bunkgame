@@ -41,6 +41,7 @@
                 </h1>
                 <div class="subtitle">ВИЗУАЛЬНАЯ АБСТРАКЦИЯ</div>
                 <button class="lobby-btn" id="lobbyBtn">LOBBY</button>
+                <button class="create-lobby-btn" id="createLobbyBtn">Create Lobby</button>
             </header>
 
 
@@ -105,6 +106,37 @@
             </div>
             <div class="lobby-content" id="lobbyContent">
                 <!-- Содержимое лобби будет здесь -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно создания лобби -->
+    <div class="modal" id="createLobbyModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeCreateLobbyModal">&times;</span>
+            <h2 class="modal-title">Создать лобби</h2>
+            <div class="role-selection">
+                <div class="role-selection-label">Выберите Активные роли:</div>
+                <div class="role-options">
+                    <label class="role-option">
+                        <input type="radio" name="activeRole" value="maniac" checked>
+                        <span class="role-option-text">Маньяк</span>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="activeRole" value="killer">
+                        <span class="role-option-text">Убийца</span>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="activeRole" value="both">
+                        <span class="role-option-text">Маньяк и убийца</span>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="activeRole" value="none">
+                        <span class="role-option-text">Без активных ролей</span>
+                    </label>
+                </div>
+                <div class="form-message" id="createLobbyMessage"></div>
+                <button type="button" class="submit-btn" id="confirmCreateLobbyBtn">Создать лобби</button>
             </div>
         </div>
     </div>
@@ -223,6 +255,47 @@
                     if (e.target === lobbyModal) {
                         if (typeof closeLobbyModal === 'function') {
                             closeLobbyModal();
+                        }
+                    }
+                });
+            }
+            
+            // Инициализация кнопки создания лобби
+            const createLobbyBtn = document.getElementById('createLobbyBtn');
+            const closeCreateLobbyModalBtn = document.getElementById('closeCreateLobbyModal');
+            const confirmCreateLobbyBtn = document.getElementById('confirmCreateLobbyBtn');
+            
+            if (createLobbyBtn) {
+                createLobbyBtn.addEventListener('click', () => {
+                    if (typeof openCreateLobbyModal === 'function') {
+                        openCreateLobbyModal();
+                    }
+                });
+            }
+            
+            if (closeCreateLobbyModalBtn) {
+                closeCreateLobbyModalBtn.addEventListener('click', () => {
+                    if (typeof closeCreateLobbyModal === 'function') {
+                        closeCreateLobbyModal();
+                    }
+                });
+            }
+            
+            if (confirmCreateLobbyBtn) {
+                confirmCreateLobbyBtn.addEventListener('click', () => {
+                    if (typeof createLobby === 'function') {
+                        createLobby();
+                    }
+                });
+            }
+            
+            // Закрытие при клике вне модального окна создания лобби
+            const createLobbyModal = document.getElementById('createLobbyModal');
+            if (createLobbyModal) {
+                createLobbyModal.addEventListener('click', (e) => {
+                    if (e.target === createLobbyModal) {
+                        if (typeof closeCreateLobbyModal === 'function') {
+                            closeCreateLobbyModal();
                         }
                     }
                 });

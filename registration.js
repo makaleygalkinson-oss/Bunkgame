@@ -442,6 +442,118 @@ function loadLobbyData() {
     }
 }
 
+// Функции для работы с модальным окном создания лобби
+function openCreateLobbyModal() {
+    const modal = document.getElementById('createLobbyModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        // Сбрасываем выбор на первый вариант
+        const firstOption = document.querySelector('input[name="activeRole"][value="maniac"]');
+        if (firstOption) {
+            firstOption.checked = true;
+        }
+    }
+}
+
+function closeCreateLobbyModal() {
+    const modal = document.getElementById('createLobbyModal');
+    if (!modal) return;
+    
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+    
+    const messageEl = document.getElementById('createLobbyMessage');
+    if (messageEl) {
+        messageEl.textContent = '';
+        messageEl.className = 'form-message';
+    }
+}
+
+// Создание лобби
+async function createLobby() {
+    const messageEl = document.getElementById('createLobbyMessage');
+    const confirmBtn = document.getElementById('confirmCreateLobbyBtn');
+    
+    if (!messageEl || !confirmBtn) return;
+    
+    const originalText = confirmBtn.textContent;
+    messageEl.textContent = '';
+    messageEl.className = 'form-message';
+    confirmBtn.textContent = 'Создание...';
+    confirmBtn.disabled = true;
+    
+    try {
+        // Проверяем, авторизован ли пользователь
+        const userStr = sessionStorage.getItem('currentUser');
+        if (!userStr) {
+            throw new Error('Необходимо войти в систему для создания лобби');
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        // Получаем выбранную роль
+        const selectedRole = document.querySelector('input[name="activeRole"]:checked');
+        if (!selectedRole) {
+            throw new Error('Выберите активную роль');
+        }
+        
+        const roleValue = selectedRole.value;
+        const roleNames = {
+            'maniac': 'Маньяк',
+            'killer': 'Убийца',
+            'both': 'Маньяк и убийца',
+            'none': 'Без активных ролей'
+        };
+        
+        // Создаем запись лобби в базе данных
+        // ID будет сгенерирован автоматически в БД (если используется DEFAULT gen_random_uuid())
+        // Или можно передать null, чтобы БД сама сгенерировала UUID
+        const lobbyData = {
+            creator_id: user.id,
+            creator_name: user.name,
+            active_role: roleValue,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+        
+        const { data: insertedData, error } = await supabase
+            .from('lobbies')
+            .insert([lobbyData])
+            .select()
+            .single();
+        
+        if (error) {
+            console.error('Ошибка создания лобби:', error);
+            let errorMessage = 'Ошибка при создании лобби. Попробуйте позже.';
+            if (error.message) {
+                errorMessage = error.message;
+            }
+            throw new Error(errorMessage);
+        }
+        
+        if (insertedData) {
+            messageEl.textContent = `Лобби успешно создано! Роль: ${roleNames[roleValue]}`;
+            messageEl.className = 'form-message success';
+            
+            // Закрываем модальное окно через 2 секунды
+            setTimeout(() => {
+                closeCreateLobbyModal();
+            }, 2000);
+        } else {
+            throw new Error('Лобби не было создано');
+        }
+        
+    } catch (error) {
+        console.error('Ошибка создания лобби:', error);
+        messageEl.textContent = error.message || 'Ошибка при создании лобби. Попробуйте позже.';
+        messageEl.className = 'form-message error';
+    } finally {
+        confirmBtn.textContent = originalText;
+        confirmBtn.disabled = false;
+    }
+}
+
 // Экспорт функций
 window.openRegisterModal = openRegisterModal;
 window.closeRegisterModal = closeRegisterModal;
@@ -449,6 +561,9 @@ window.openLoginModal = openLoginModal;
 window.closeLoginModal = closeLoginModal;
 window.openLobbyModal = openLobbyModal;
 window.closeLobbyModal = closeLobbyModal;
+window.openCreateLobbyModal = openCreateLobbyModal;
+window.closeCreateLobbyModal = closeCreateLobbyModal;
+window.createLobby = createLobby;
 
 // Проверяем пользователя при загрузке
 checkCurrentUser();

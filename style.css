@@ -320,6 +320,37 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
+/* Кнопка Create Lobby */
+.create-lobby-btn {
+    background: rgba(60, 60, 60, 0.9);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(150, 150, 150, 0.5);
+    border-radius: 12px;
+    padding: 14px 32px;
+    color: #d0d0d0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    margin-top: 1rem;
+    min-height: 50px;
+}
+
+.create-lobby-btn:hover {
+    background: rgba(80, 80, 80, 0.95);
+    border-color: rgba(200, 200, 200, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.6);
+}
+
+.create-lobby-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
 .main-footer {
     margin-top: auto;
     padding-bottom: 2rem;
@@ -641,6 +672,65 @@ body {
     min-height: 200px;
 }
 
+/* Выбор ролей для создания лобби */
+.role-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.role-selection-label {
+    font-size: 1rem;
+    color: #d0d0d0;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.role-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.role-option {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(40, 40, 40, 0.6);
+    border: 2px solid rgba(150, 150, 150, 0.3);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.role-option:hover {
+    background: rgba(50, 50, 50, 0.8);
+    border-color: rgba(200, 200, 200, 0.5);
+    transform: translateX(5px);
+}
+
+.role-option input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 1rem;
+    cursor: pointer;
+    accent-color: #00ff88;
+}
+
+.role-option input[type="radio"]:checked + .role-option-text {
+    color: #00ff88;
+    font-weight: 700;
+}
+
+.role-option-text {
+    font-size: 1rem;
+    color: #d0d0d0;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
     .title {
@@ -767,6 +857,13 @@ body {
         min-height: 44px;
     }
     
+    .create-lobby-btn {
+        padding: 12px 24px;
+        font-size: 1rem;
+        margin-top: 0.8rem;
+        min-height: 44px;
+    }
+    
     .lobby-header {
         flex-direction: column;
         gap: 1rem;
@@ -775,5 +872,13 @@ body {
     
     .lobby-header-item {
         width: 100%;
+    }
+    
+    .role-option {
+        padding: 0.8rem;
+    }
+    
+    .role-option-text {
+        font-size: 0.9rem;
     }
 }
