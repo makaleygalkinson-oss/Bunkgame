@@ -421,12 +421,11 @@ async function connectToLobby(lobbyId) {
         
         const user = JSON.parse(userStr);
         
-        // Обновляем запись пользователя в БД - добавляем lobby_id
-        // Преобразуем lobbyId в строку, если это UUID
+        // Обновляем запись пользователя в БД - добавляем lobby_id (числовой)
         const { error: updateError } = await supabase
             .from('users')
             .update({ 
-                lobby_id: lobbyId.toString(),
+                lobby_id: parseInt(lobbyId),
                 updated_at: new Date().toISOString()
             })
             .eq('id', user.id);
@@ -479,7 +478,7 @@ async function loadLobbyData() {
         // Получаем все лобби из базы данных
         const { data: lobbies, error } = await supabase
             .from('lobbies')
-            .select('id, creator_name, active_role, created_at')
+            .select('lobby_id, creator_name, active_role, created_at')
             .order('created_at', { ascending: false });
         
         if (error) {
@@ -493,11 +492,31 @@ async function loadLobbyData() {
             return;
         }
         
+        // Получаем количество игроков в каждом лобби
+        const { data: users, error: usersError } = await supabase
+            .from('users')
+            .select('lobby_id');
+        
+        if (usersError) {
+            console.error('Ошибка загрузки игроков:', usersError);
+        }
+        
+        // Подсчитываем количество игроков для каждого лобби
+        const playerCounts = {};
+        if (users) {
+            users.forEach(user => {
+                if (user.lobby_id) {
+                    playerCounts[user.lobby_id] = (playerCounts[user.lobby_id] || 0) + 1;
+                }
+            });
+        }
+        
         // Очищаем контент
         lobbyContent.innerHTML = '';
         
         // Создаем карточки для каждого лобби
         lobbies.forEach((lobby) => {
+            const playerCount = playerCounts[lobby.lobby_id] || 0;
             const lobbyCard = document.createElement('div');
             lobbyCard.className = 'lobby-card';
             
@@ -518,14 +537,15 @@ async function loadLobbyData() {
                     </div>
                     <div class="lobby-card-header-item">
                         <span class="lobby-card-label">id Lobby</span>
-                        <span class="lobby-card-value">${lobby.id || '-'}</span>
+                        <span class="lobby-card-value">${lobby.lobby_id || '-'}</span>
                     </div>
                 </div>
                 <div class="lobby-card-info">
                     <span class="lobby-card-role">Роль: ${roleName}</span>
+                    <span class="lobby-card-players">Игроков: ${playerCount}</span>
                 </div>
                 <div class="lobby-card-actions">
-                    <button class="lobby-connect-btn" data-lobby-id="${lobby.id}">CONNECT</button>
+                    <button class="lobby-connect-btn" data-lobby-id="${lobby.lobby_id}">CONNECT</button>
                 </div>
             `;
             
@@ -533,7 +553,7 @@ async function loadLobbyData() {
             const connectBtn = lobbyCard.querySelector('.lobby-connect-btn');
             if (connectBtn) {
                 connectBtn.addEventListener('click', async () => {
-                    await connectToLobby(lobby.id);
+                    await connectToLobby(lobby.lobby_id);
                 });
             }
             
@@ -613,10 +633,21 @@ async function createLobby() {
             'none': 'Без активных ролей'
         };
         
+        // Находим максимальный lobby_id и создаем новый (числовой)
+        const { data: maxLobbyData, error: maxError } = await supabase
+            .from('lobbies')
+            .select('lobby_id')
+            .order('lobby_id', { ascending: false })
+            .limit(1);
+        
+        let newLobbyId = 1;
+        if (!maxError && maxLobbyData && maxLobbyData.length > 0 && maxLobbyData[0].lobby_id) {
+            newLobbyId = parseInt(maxLobbyData[0].lobby_id) + 1;
+        }
+        
         // Создаем запись лобби в базе данных
-        // ID будет сгенерирован автоматически в БД (если используется DEFAULT gen_random_uuid())
-        // Или можно передать null, чтобы БД сама сгенерировала UUID
         const lobbyData = {
+            lobby_id: newLobbyId,
             creator_id: user.id,
             creator_name: user.name,
             active_role: roleValue,

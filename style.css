@@ -840,12 +840,19 @@ body {
 .lobby-card-info {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .lobby-card-role {
     font-size: 0.9rem;
     color: #d0d0d0;
+    font-weight: 600;
+}
+
+.lobby-card-players {
+    font-size: 0.9rem;
+    color: #00ff88;
     font-weight: 600;
 }
 

@@ -41,13 +41,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             
-            if (!userData || !userData.lobby_id) {
+            if (!userData || !userData.lobby_id || userData.lobby_id === 0) {
                 console.log('ℹ️ Пользователь не в лобби, возвращаем на главную');
                 window.location.href = 'index.html';
                 return;
             }
             
-            currentLobbyId = userData.lobby_id;
+            currentLobbyId = userData.lobby_id.toString();
             sessionStorage.setItem('currentLobbyId', currentLobbyId);
         } else {
             currentLobbyId = lobbyIdStr;
@@ -74,8 +74,8 @@ async function loadLobbyInfo() {
         // Получаем информацию о лобби
         const { data: lobby, error: lobbyError } = await supabase
             .from('lobbies')
-            .select('id, creator_name, active_role')
-            .eq('id', currentLobbyId)
+            .select('lobby_id, creator_name, active_role')
+            .eq('lobby_id', parseInt(currentLobbyId))
             .maybeSingle();
         
         if (lobbyError) {
@@ -93,7 +93,7 @@ async function loadLobbyInfo() {
         const { data: players, error: playersError } = await supabase
             .from('users')
             .select('id, name, email')
-            .eq('lobby_id', currentLobbyId);
+            .eq('lobby_id', parseInt(currentLobbyId));
         
         if (playersError) {
             console.error('Ошибка загрузки игроков:', playersError);
@@ -113,7 +113,7 @@ async function loadLobbyInfo() {
         
         gameInfo.innerHTML = `
             <div class="game-lobby-info">
-                <p><strong>ID Лобби:</strong> ${lobby.id}</p>
+                <p><strong>ID Лобби:</strong> ${lobby.lobby_id}</p>
                 <p><strong>Создатель:</strong> ${lobby.creator_name}</p>
                 <p><strong>Активная роль:</strong> ${roleName}</p>
                 <p><strong>Игроки в лобби:</strong> ${playersList}</p>
