@@ -627,6 +627,106 @@ body {
     transform: none;
 }
 
+/* Страница игры */
+.game-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1f1f1f 100%);
+    padding: 2rem;
+    position: relative;
+}
+
+.game-header-section {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.game-exit-btn {
+    background: rgba(200, 50, 50, 0.9);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 100, 100, 0.5);
+    border-radius: 12px;
+    padding: 12px 24px;
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(200, 50, 50, 0.3);
+    min-height: 44px;
+}
+
+.game-exit-btn:hover {
+    background: rgba(220, 70, 70, 0.95);
+    border-color: rgba(255, 120, 120, 0.7);
+    box-shadow: 0 6px 25px rgba(200, 50, 50, 0.5);
+    transform: translateY(-2px);
+}
+
+.game-exit-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(200, 50, 50, 0.3);
+}
+
+.game-exit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.game-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 100px;
+    text-align: center;
+}
+
+.game-title {
+    font-size: 4rem;
+    font-weight: 900;
+    color: #00ff88;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 3rem;
+    text-shadow: 0 0 40px rgba(0, 255, 136, 0.6);
+}
+
+.game-info {
+    background: rgba(40, 40, 40, 0.8);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(150, 150, 150, 0.3);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem auto;
+    max-width: 600px;
+}
+
+.game-lobby-info {
+    text-align: left;
+    color: #d0d0d0;
+    line-height: 2;
+}
+
+.game-lobby-info p {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.game-lobby-info strong {
+    color: #00ff88;
+    font-weight: 700;
+}
+
+.game-error {
+    color: #ffaaaa;
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.1rem;
+}
+
 /* Модальное окно лобби */
 .lobby-modal-content {
     max-width: 700px;
@@ -779,12 +879,18 @@ body {
     cursor: not-allowed;
 }
 
+.lobby-connect-btn:not(:disabled) {
+    opacity: 1;
+    cursor: pointer;
+    color: #d0d0d0;
+}
+
 .lobby-connect-btn:not(:disabled):hover {
     background: rgba(80, 80, 80, 0.95);
-    border-color: rgba(200, 200, 200, 0.8);
+    border-color: rgba(0, 255, 136, 0.6);
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-    color: #d0d0d0;
+    box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+    color: #00ff88;
 }
 
 .lobby-connect-btn:not(:disabled):active {

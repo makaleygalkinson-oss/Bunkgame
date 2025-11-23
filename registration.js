@@ -409,6 +409,46 @@ function checkCurrentUser() {
     }
 }
 
+// Подключение к лобби
+async function connectToLobby(lobbyId) {
+    try {
+        // Проверяем, авторизован ли пользователь
+        const userStr = sessionStorage.getItem('currentUser');
+        if (!userStr) {
+            alert('Необходимо войти в систему для подключения к лобби');
+            return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        // Обновляем запись пользователя в БД - добавляем lobby_id
+        // Преобразуем lobbyId в строку, если это UUID
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ 
+                lobby_id: lobbyId.toString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+        
+        if (updateError) {
+            console.error('Ошибка подключения к лобби:', updateError);
+            alert('Ошибка подключения к лобби. Попробуйте позже.');
+            return;
+        }
+        
+        // Сохраняем информацию о лобби в sessionStorage
+        sessionStorage.setItem('currentLobbyId', lobbyId);
+        
+        // Переходим на страницу игры
+        window.location.href = 'game.html';
+        
+    } catch (err) {
+        console.error('Ошибка подключения к лобби:', err);
+        alert('Ошибка подключения к лобби. Попробуйте позже.');
+    }
+}
+
 // Функции для работы с модальным окном лобби
 function openLobbyModal() {
     const modal = document.getElementById('lobbyModal');
@@ -485,9 +525,17 @@ async function loadLobbyData() {
                     <span class="lobby-card-role">Роль: ${roleName}</span>
                 </div>
                 <div class="lobby-card-actions">
-                    <button class="lobby-connect-btn" disabled>CONNECT</button>
+                    <button class="lobby-connect-btn" data-lobby-id="${lobby.id}">CONNECT</button>
                 </div>
             `;
+            
+            // Добавляем обработчик для кнопки CONNECT
+            const connectBtn = lobbyCard.querySelector('.lobby-connect-btn');
+            if (connectBtn) {
+                connectBtn.addEventListener('click', async () => {
+                    await connectToLobby(lobby.id);
+                });
+            }
             
             lobbyContent.appendChild(lobbyCard);
         });
