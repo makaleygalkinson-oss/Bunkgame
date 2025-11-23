@@ -13,14 +13,24 @@
 </head>
 <body>
     <div class="game-container">
+        <!-- Блок с информацией о лобби в правом верхнем углу -->
         <div class="game-header-section">
-            <button class="game-exit-btn" id="exitLobbyBtn">Выйти из лобби</button>
+            <div class="game-info" id="gameInfo">
+                <p class="game-loading">Загрузка информации о лобби...</p>
+            </div>
+            <button class="game-exit-btn" id="exitLobbyBtn">Exit Lobby</button>
         </div>
-        
+
+        <!-- Основной контент -->
         <div class="game-content">
             <h1 class="game-title">ИГРА</h1>
-            <div class="game-info" id="gameInfo">
-                <p>Загрузка информации о лобби...</p>
+            
+            <!-- Большой блок "Карточка бункера" -->
+            <div class="bunker-card">
+                <h2 class="bunker-card-title">Карточка бункера</h2>
+                <div class="bunker-card-content">
+                    <!-- Пока пустой -->
+                </div>
             </div>
         </div>
     </div>
@@ -29,5 +39,3 @@
     <script src="game.js"></script>
 </body>
 </html>
-
-
