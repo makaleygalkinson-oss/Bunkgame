@@ -5,11 +5,18 @@ let currentUser = null;
 
 // Универсальная функция закрытия модального окна
 function closeModal(modalId, formId, messageId) {
-    if (isClosingModal) return;
+    if (isClosingModal) {
+        console.log('⚠️ Модальное окно уже закрывается');
+        return;
+    }
     
     const modal = document.getElementById(modalId);
-    if (!modal) return;
+    if (!modal) {
+        console.error('❌ Модальное окно не найдено:', modalId);
+        return;
+    }
     
+    console.log('🔒 Закрываем модальное окно:', modalId);
     isClosingModal = true;
     modal.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; z-index: -1 !important;';
     modal.classList.add('hidden');
@@ -23,7 +30,10 @@ function closeModal(modalId, formId, messageId) {
         messageEl.className = 'form-message';
     }
     
-    setTimeout(() => { isClosingModal = false; }, 500);
+    setTimeout(() => { 
+        isClosingModal = false;
+        console.log('✅ Флаг закрытия модального окна сброшен');
+    }, 500);
 }
 
 function closeRegisterModal() { closeModal('registerModal', 'registerForm', 'registerMessage'); }
@@ -201,30 +211,73 @@ if (loginForm) {
         }
         
         try {
+            console.log('🔐 Попытка входа для:', email);
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password
             });
             
-            if (error) throw error;
+            if (error) {
+                console.error('❌ Ошибка входа:', error);
+                throw error;
+            }
             
-            if (data.user) {
-                currentUser = data.user;
+            console.log('✅ Данные входа получены:', data);
+            console.log('📋 Структура данных:', JSON.stringify(data, null, 2));
+            
+            // Проверяем наличие пользователя в разных возможных местах
+            const user = data?.user || data?.session?.user || null;
+            
+            if (user) {
+                console.log('✅ Пользователь найден:', user.id, user.email);
+                currentUser = user;
                 if (typeof window !== 'undefined') {
-                    window.currentUserId = data.user.id;
+                    window.currentUserId = user.id;
                 }
-                // Убеждаемся, что пользователь есть в БД
-                await ensureUserInDB(data.user);
-                updateAuthUI(data.user);
+                
+                // Убеждаемся, что пользователь есть в БД (не блокируем, если ошибка)
+                ensureUserInDB(user).then(() => {
+                    console.log('✅ Пользователь проверен/создан в БД');
+                }).catch((dbError) => {
+                    console.error('⚠️ Ошибка проверки пользователя в БД:', dbError);
+                    // Продолжаем, даже если есть ошибка с БД
+                });
+                
+                // Обновляем UI
+                try {
+                    updateAuthUI(user);
+                    console.log('✅ UI обновлен');
+                } catch (uiError) {
+                    console.error('⚠️ Ошибка обновления UI:', uiError);
+                    // Пытаемся обновить UI вручную
+                    const authButtons = document.querySelector('.auth-buttons');
+                    if (authButtons) {
+                        const userName = user.user_metadata?.name || user.email;
+                        authButtons.innerHTML = `
+                            <span class="user-name">${userName}</span>
+                            <button class="auth-btn lobbies-btn" id="lobbiesBtn" title="Активные лобби">ЛОББИ</button>
+                            <button class="auth-btn" id="logoutBtn">Выйти</button>
+                        `;
+                    }
+                }
+                
                 messageEl.textContent = 'Вход выполнен успешно!';
                 messageEl.className = 'form-message success';
                 e.target.reset();
+                
+                // Закрываем модальное окно
                 setTimeout(() => {
+                    console.log('🔒 Закрываем модальное окно входа');
                     closeLoginModal();
                 }, 1000);
+            } else {
+                console.error('❌ Пользователь не найден в данных');
+                console.error('📋 Полные данные:', data);
+                messageEl.textContent = 'Ошибка: пользователь не найден в ответе сервера';
+                messageEl.className = 'form-message error';
             }
         } catch (error) {
-            console.error('Ошибка входа:', error);
+            console.error('❌ Ошибка входа:', error);
             messageEl.textContent = error.message || 'Ошибка при входе. Проверьте email и пароль.';
             messageEl.className = 'form-message error';
         } finally {
