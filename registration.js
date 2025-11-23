@@ -441,7 +441,8 @@ async function connectToLobby(lobbyId) {
         console.log('Обновление lobby_id для пользователя:', user.id, 'на значение:', numericLobbyId);
         
         // Обновляем запись пользователя в БД - добавляем lobby_id (числовой)
-        const { data: updatedData, error: updateError } = await supabase
+        // Сначала пробуем с .select(), если не работает - без него
+        let { data: updatedData, error: updateError } = await supabase
             .from('users')
             .update({ 
                 lobby_id: numericLobbyId,
@@ -450,28 +451,66 @@ async function connectToLobby(lobbyId) {
             .eq('id', user.id)
             .select();
         
+        // Если данные не вернулись, но ошибки нет - проверяем вручную
+        if (!updateError && (!updatedData || updatedData.length === 0)) {
+            console.log('Данные не вернулись, проверяем обновление вручную...');
+            
+            // Пробуем обновить без .select()
+            const { error: updateError2 } = await supabase
+                .from('users')
+                .update({ 
+                    lobby_id: numericLobbyId,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', user.id);
+            
+            if (updateError2) {
+                console.error('Ошибка при обновлении без select:', updateError2);
+                updateError = updateError2;
+            } else {
+                // Проверяем, что обновление произошло, запрашивая данные отдельно
+                console.log('Проверяем обновление отдельным запросом...');
+                const { data: checkData, error: checkError } = await supabase
+                    .from('users')
+                    .select('id, name, lobby_id')
+                    .eq('id', user.id)
+                    .maybeSingle();
+                
+                if (checkError) {
+                    console.error('Ошибка при проверке обновления:', checkError);
+                    alert(`Ошибка при проверке обновления: ${checkError.message}`);
+                    return;
+                }
+                
+                if (!checkData) {
+                    console.error('Пользователь не найден после обновления');
+                    alert('Ошибка: пользователь не найден');
+                    return;
+                }
+                
+                console.log('Проверка обновления:', checkData);
+                
+                if (checkData.lobby_id !== numericLobbyId) {
+                    console.error('Ошибка: lobby_id не обновился! Ожидалось:', numericLobbyId, 'Получено:', checkData.lobby_id);
+                    alert(`Ошибка: lobby_id не обновился. Текущее значение: ${checkData.lobby_id}`);
+                    return;
+                }
+                
+                console.log('✅ Обновление подтверждено! Новый lobby_id:', checkData.lobby_id);
+                updatedData = [checkData];
+            }
+        }
+        
         if (updateError) {
             console.error('Ошибка подключения к лобби:', updateError);
             console.error('Детали ошибки:', JSON.stringify(updateError, null, 2));
-            alert(`Ошибка подключения к лобби: ${updateError.message || 'Неизвестная ошибка'}`);
+            alert(`Ошибка подключения к лобби: ${updateError.message || 'Неизвестная ошибка'}\n\nПроверьте RLS политики для UPDATE в таблице users.`);
             return;
         }
         
-        // Проверяем, что обновление действительно произошло
-        if (!updatedData || updatedData.length === 0) {
-            console.error('Обновление не произошло: данные не вернулись');
-            alert('Ошибка: не удалось обновить данные пользователя');
-            return;
-        }
-        
-        console.log('Успешно обновлено:', updatedData);
-        console.log('Новый lobby_id пользователя:', updatedData[0].lobby_id);
-        
-        // Проверяем, что lobby_id действительно обновился
-        if (updatedData[0].lobby_id !== numericLobbyId) {
-            console.error('Ошибка: lobby_id не совпадает! Ожидалось:', numericLobbyId, 'Получено:', updatedData[0].lobby_id);
-            alert('Ошибка: lobby_id не обновился корректно');
-            return;
+        if (updatedData && updatedData.length > 0) {
+            console.log('Успешно обновлено:', updatedData);
+            console.log('Новый lobby_id пользователя:', updatedData[0].lobby_id);
         }
         
         // Сохраняем информацию о лобби в sessionStorage
