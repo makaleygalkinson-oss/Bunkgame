@@ -180,8 +180,10 @@ function initRegistrationForm() {
             messageEl.className = 'form-message success';
             e.target.reset();
             
-            // Закрываем модальное окно сразу
-            closeRegisterModal();
+            // Закрываем модальное окно через 2 секунды, чтобы пользователь увидел сообщение
+            setTimeout(() => {
+                closeRegisterModal();
+            }, 2000);
         } catch (error) {
             console.error('Ошибка регистрации:', error);
             messageEl.textContent = error.message || 'Ошибка при регистрации. Попробуйте позже.';
@@ -235,19 +237,23 @@ function initLoginForm() {
         }
         
         try {
-            // Ищем пользователя по имени
-            const { data: user, error: findError } = await supabase
+            // Ищем пользователя по имени (без учета регистра и пробелов)
+            const { data: users, error: findError } = await supabase
                 .from('users')
-                .select('id, name, email, password_hash')
-                .eq('name', name)
-                .maybeSingle();
+                .select('id, name, email, password_hash');
             
-            if (findError && findError.code !== 'PGRST116') {
+            if (findError) {
                 console.error('Ошибка поиска пользователя:', findError);
                 throw new Error('Ошибка при входе. Попробуйте позже.');
             }
             
+            // Ищем пользователя по имени (без учета регистра и пробелов)
+            const user = users?.find(u => 
+                u.name && u.name.trim().toLowerCase() === name.toLowerCase()
+            );
+            
             if (!user) {
+                console.log('Пользователи в БД:', users?.map(u => u.name));
                 throw new Error('Пользователь с таким именем не найден');
             }
             
@@ -412,6 +418,8 @@ function checkCurrentUser() {
 // Подключение к лобби
 async function connectToLobby(lobbyId) {
     try {
+        console.log('Подключение к лобби:', lobbyId);
+        
         // Проверяем, авторизован ли пользователь
         const userStr = sessionStorage.getItem('currentUser');
         if (!userStr) {
@@ -420,31 +428,46 @@ async function connectToLobby(lobbyId) {
         }
         
         const user = JSON.parse(userStr);
+        console.log('Пользователь:', user);
         
-        // Обновляем запись пользователя в БД - добавляем lobby_id (числовой)
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({ 
-                lobby_id: parseInt(lobbyId),
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id);
-        
-        if (updateError) {
-            console.error('Ошибка подключения к лобби:', updateError);
-            alert('Ошибка подключения к лобби. Попробуйте позже.');
+        // Преобразуем lobbyId в число
+        const numericLobbyId = parseInt(lobbyId);
+        if (isNaN(numericLobbyId)) {
+            console.error('Некорректный ID лобби:', lobbyId);
+            alert('Ошибка: некорректный ID лобби');
             return;
         }
         
+        console.log('Обновление lobby_id для пользователя:', user.id, 'на значение:', numericLobbyId);
+        
+        // Обновляем запись пользователя в БД - добавляем lobby_id (числовой)
+        const { data: updatedData, error: updateError } = await supabase
+            .from('users')
+            .update({ 
+                lobby_id: numericLobbyId,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+            .select();
+        
+        if (updateError) {
+            console.error('Ошибка подключения к лобби:', updateError);
+            console.error('Детали ошибки:', JSON.stringify(updateError, null, 2));
+            alert(`Ошибка подключения к лобби: ${updateError.message || 'Неизвестная ошибка'}`);
+            return;
+        }
+        
+        console.log('Успешно обновлено:', updatedData);
+        
         // Сохраняем информацию о лобби в sessionStorage
-        sessionStorage.setItem('currentLobbyId', lobbyId);
+        sessionStorage.setItem('currentLobbyId', numericLobbyId.toString());
         
         // Переходим на страницу игры
         window.location.href = 'game.html';
         
     } catch (err) {
         console.error('Ошибка подключения к лобби:', err);
-        alert('Ошибка подключения к лобби. Попробуйте позже.');
+        alert(`Ошибка подключения к лобби: ${err.message || 'Неизвестная ошибка'}`);
     }
 }
 
