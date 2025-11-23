@@ -484,6 +484,9 @@ async function loadLobbyData() {
                 <div class="lobby-card-info">
                     <span class="lobby-card-role">Роль: ${roleName}</span>
                 </div>
+                <div class="lobby-card-actions">
+                    <button class="lobby-connect-btn" disabled>CONNECT</button>
+                </div>
             `;
             
             lobbyContent.appendChild(lobbyCard);
