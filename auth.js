@@ -5,20 +5,10 @@ let currentUser = null;
 
 // Универсальная функция закрытия модального окна
 function closeModal(modalId, formId, messageId) {
-    if (isClosingModal) {
-        console.log('⚠️ Модальное окно уже закрывается');
-        return;
-    }
-    
     const modal = document.getElementById(modalId);
-    if (!modal) {
-        console.error('❌ Модальное окно не найдено:', modalId);
-        return;
-    }
+    if (!modal) return;
     
-    console.log('🔒 Закрываем модальное окно:', modalId);
-    isClosingModal = true;
-    modal.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; z-index: -1 !important;';
+    modal.style.display = 'none';
     modal.classList.add('hidden');
     
     const form = document.getElementById(formId);
@@ -29,11 +19,6 @@ function closeModal(modalId, formId, messageId) {
         messageEl.textContent = '';
         messageEl.className = 'form-message';
     }
-    
-    setTimeout(() => { 
-        isClosingModal = false;
-        console.log('✅ Флаг закрытия модального окна сброшен');
-    }, 500);
 }
 
 function closeRegisterModal() { closeModal('registerModal', 'registerForm', 'registerMessage'); }
@@ -211,73 +196,41 @@ if (loginForm) {
         }
         
         try {
-            console.log('🔐 Попытка входа для:', email);
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password
             });
             
             if (error) {
-                console.error('❌ Ошибка входа:', error);
                 throw error;
             }
             
-            console.log('✅ Данные входа получены:', data);
-            console.log('📋 Структура данных:', JSON.stringify(data, null, 2));
-            
-            // Проверяем наличие пользователя в разных возможных местах
-            const user = data?.user || data?.session?.user || null;
+            // Supabase возвращает { user, session }
+            const user = data?.user;
             
             if (user) {
-                console.log('✅ Пользователь найден:', user.id, user.email);
                 currentUser = user;
                 if (typeof window !== 'undefined') {
                     window.currentUserId = user.id;
                 }
                 
-                // Убеждаемся, что пользователь есть в БД (не блокируем, если ошибка)
-                ensureUserInDB(user).then(() => {
-                    console.log('✅ Пользователь проверен/создан в БД');
-                }).catch((dbError) => {
-                    console.error('⚠️ Ошибка проверки пользователя в БД:', dbError);
-                    // Продолжаем, даже если есть ошибка с БД
-                });
+                // Убеждаемся, что пользователь есть в БД (не блокируем выполнение)
+                ensureUserInDB(user).catch(() => {});
                 
                 // Обновляем UI
-                try {
-                    updateAuthUI(user);
-                    console.log('✅ UI обновлен');
-                } catch (uiError) {
-                    console.error('⚠️ Ошибка обновления UI:', uiError);
-                    // Пытаемся обновить UI вручную
-                    const authButtons = document.querySelector('.auth-buttons');
-                    if (authButtons) {
-                        const userName = user.user_metadata?.name || user.email;
-                        authButtons.innerHTML = `
-                            <span class="user-name">${userName}</span>
-                            <button class="auth-btn lobbies-btn" id="lobbiesBtn" title="Активные лобби">ЛОББИ</button>
-                            <button class="auth-btn" id="logoutBtn">Выйти</button>
-                        `;
-                    }
-                }
+                updateAuthUI(user);
                 
                 messageEl.textContent = 'Вход выполнен успешно!';
                 messageEl.className = 'form-message success';
                 e.target.reset();
                 
-                // Закрываем модальное окно
-                setTimeout(() => {
-                    console.log('🔒 Закрываем модальное окно входа');
-                    closeLoginModal();
-                }, 1000);
+                // Закрываем модальное окно сразу
+                closeLoginModal();
             } else {
-                console.error('❌ Пользователь не найден в данных');
-                console.error('📋 Полные данные:', data);
-                messageEl.textContent = 'Ошибка: пользователь не найден в ответе сервера';
+                messageEl.textContent = 'Ошибка: пользователь не найден';
                 messageEl.className = 'form-message error';
             }
         } catch (error) {
-            console.error('❌ Ошибка входа:', error);
             messageEl.textContent = error.message || 'Ошибка при входе. Проверьте email и пароль.';
             messageEl.className = 'form-message error';
         } finally {
@@ -290,13 +243,10 @@ if (loginForm) {
 // Создание пользователя в базе данных
 async function createUserInDB(user, name, email) {
     try {
-        const deviceInfo = typeof getDeviceInfo === 'function' ? getDeviceInfo() : { device_id: null };
-        
         const userData = {
             id: user.id,
             email: email,
             name: name,
-            device_id: deviceInfo.device_id,
             lobby_id: 0,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -307,7 +257,6 @@ async function createUserInDB(user, name, email) {
             .upsert([userData], { onConflict: 'id' });
         
         if (error) {
-            console.error('Ошибка создания пользователя:', error);
             // Пытаемся через RPC функцию, если есть
             if (error.code === '42501' || error.message?.includes('permission denied')) {
                 try {
@@ -315,16 +264,16 @@ async function createUserInDB(user, name, email) {
                         p_user_id: user.id,
                         p_email: email,
                         p_name: name,
-                        p_device_id: deviceInfo.device_id,
+                        p_device_id: null,
                         p_lobby_id: 0
                     });
                 } catch (rpcError) {
-                    console.error('Ошибка RPC создания пользователя:', rpcError);
+                    // Игнорируем ошибки RPC
                 }
             }
         }
     } catch (err) {
-        console.error('Ошибка создания пользователя:', err);
+        // Игнорируем ошибки создания пользователя
     }
 }
 
@@ -345,7 +294,6 @@ async function ensureUserInDB(user) {
         if (!data) {
             // Пользователя нет - создаем
             const name = user.user_metadata?.name || user.email;
-            const deviceInfo = typeof getDeviceInfo === 'function' ? getDeviceInfo() : { device_id: null };
             await createUserInDB(user, name, user.email);
         }
     } catch (err) {
@@ -409,7 +357,7 @@ function initAuthSession() {
             if (typeof window !== 'undefined') {
                 window.currentUserId = session.user.id;
             }
-            await ensureUserInDB(session.user);
+            ensureUserInDB(session.user).catch(() => {});
             updateAuthUI(session.user);
         } else {
             if (typeof window !== 'undefined') {
@@ -418,7 +366,6 @@ function initAuthSession() {
             updateAuthUI(null);
         }
     }).catch(err => {
-        console.error('Ошибка проверки сессии:', err);
         if (typeof window !== 'undefined') {
             window.currentUserId = null;
         }
@@ -426,12 +373,12 @@ function initAuthSession() {
     });
 
     supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && session && session.user) {
             currentUser = session.user;
             if (typeof window !== 'undefined') {
                 window.currentUserId = session.user.id;
             }
-            await ensureUserInDB(session.user);
+            ensureUserInDB(session.user).catch(() => {});
             updateAuthUI(session.user);
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;

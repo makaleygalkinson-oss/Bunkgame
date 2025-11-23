@@ -350,13 +350,11 @@ async function toggleReadyStatus() {
             }
         } else {
             // Добавляем готовность
-            const deviceInfo = typeof getDeviceInfo === 'function' ? getDeviceInfo() : { device_id: null };
             const { error } = await supabase
                 .from('ready_players')
                 .upsert([
                     {
                         user_id: currentUserId,
-                        device_id: deviceInfo.device_id,
                         ready_at: new Date().toISOString()
                     }
                 ], {
