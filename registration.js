@@ -343,14 +343,12 @@ function updateAuthUI(user) {
         };
     }
     
-    // Показываем кнопку АДМИНКУ только для админов
+    // Показываем кнопку АДМИНКА только для админов
     if (adminBtn) {
         if (user.isAdmin) {
             adminBtn.style.display = 'block';
-            // Пока без функционала - просто кнопка
             adminBtn.onclick = () => {
-                console.log('Админка открыта (функционал пока не реализован)');
-                // Здесь будет функционал админки
+                openAdminModal();
             };
         } else {
             adminBtn.style.display = 'none';
@@ -904,6 +902,111 @@ async function createLobby() {
     }
 }
 
+// Функции для работы с модальным окном админки
+function openAdminModal() {
+    const modal = document.getElementById('adminModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        // Загружаем список онлайн игроков
+        loadAdminPlayers();
+    }
+}
+
+function closeAdminModal() {
+    const modal = document.getElementById('adminModal');
+    if (!modal) return;
+    
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+}
+
+// Загрузка списка онлайн игроков для админки
+async function loadAdminPlayers() {
+    const playersList = document.getElementById('adminPlayersList');
+    if (!playersList) return;
+    
+    try {
+        playersList.innerHTML = '<p class="admin-loading">Загрузка игроков...</p>';
+        
+        // Получаем всех пользователей
+        const { data: users, error: usersError } = await supabase
+            .from('users')
+            .select('id, name, email, lobby_id');
+        
+        if (usersError) {
+            console.error('Ошибка загрузки игроков:', usersError);
+            playersList.innerHTML = '<p class="admin-error">Ошибка загрузки игроков</p>';
+            return;
+        }
+        
+        if (!users || users.length === 0) {
+            playersList.innerHTML = '<p class="admin-empty">Игроки не найдены</p>';
+            return;
+        }
+        
+        // Получаем информацию о лобби для определения названий
+        const { data: lobbies, error: lobbiesError } = await supabase
+            .from('lobbies')
+            .select('lobby_id, creator_name');
+        
+        const lobbyMap = {};
+        if (lobbies && !lobbiesError) {
+            lobbies.forEach(lobby => {
+                lobbyMap[lobby.lobby_id] = lobby;
+            });
+        }
+        
+        // Очищаем список
+        playersList.innerHTML = '';
+        
+        // Создаем карточки для каждого игрока
+        users.forEach((user) => {
+            const playerCard = document.createElement('div');
+            playerCard.className = 'admin-player-card';
+            
+            // Определяем статус лобби
+            let lobbyStatus = 'не в лобби';
+            if (user.lobby_id) {
+                const lobby = lobbyMap[user.lobby_id];
+                if (lobby) {
+                    lobbyStatus = `lobby ${user.lobby_id}`;
+                } else {
+                    lobbyStatus = `lobby ${user.lobby_id}`;
+                }
+            }
+            
+            playerCard.innerHTML = `
+                <div class="admin-player-info">
+                    <span class="admin-player-text">${user.name || user.email} - в сети - ${lobbyStatus}</span>
+                </div>
+                <div class="admin-player-actions">
+                    <button class="admin-mod-btn" data-user-id="${user.id}" data-user-name="${user.name || user.email}">
+                        Назначить Модератором
+                    </button>
+                </div>
+            `;
+            
+            // Добавляем обработчик для кнопки "Назначить Модератором"
+            const modBtn = playerCard.querySelector('.admin-mod-btn');
+            if (modBtn) {
+                modBtn.addEventListener('click', () => {
+                    console.log('Назначение модератором:', user.id, user.name);
+                    // Пока ничего не делает
+                });
+            }
+            
+            playersList.appendChild(playerCard);
+        });
+        
+    } catch (err) {
+        console.error('Ошибка загрузки игроков:', err);
+        if (playersList) {
+            playersList.innerHTML = '<p class="admin-error">Ошибка загрузки игроков</p>';
+        }
+    }
+}
+
 // Экспорт функций
 window.openRegisterModal = openRegisterModal;
 window.closeRegisterModal = closeRegisterModal;
@@ -913,6 +1016,8 @@ window.openLobbyModal = openLobbyModal;
 window.closeLobbyModal = closeLobbyModal;
 window.openCreateLobbyModal = openCreateLobbyModal;
 window.closeCreateLobbyModal = closeCreateLobbyModal;
+window.openAdminModal = openAdminModal;
+window.closeAdminModal = closeAdminModal;
 window.createLobby = createLobby;
 
 // Проверяем пользователя при загрузке

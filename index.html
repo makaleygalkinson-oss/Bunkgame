@@ -153,6 +153,22 @@
         </div>
     </div>
 
+    <!-- Модальное окно админки -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content admin-modal-content">
+            <span class="modal-close" id="closeAdminModal">&times;</span>
+            <h2 class="modal-title">Функции Админа</h2>
+            <div class="admin-content">
+                <div class="admin-players-section">
+                    <h3 class="admin-section-title">Онлайн игроки</h3>
+                    <div class="admin-players-list" id="adminPlayersList">
+                        <p class="admin-loading">Загрузка игроков...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="supabase-config.js"></script>
     <script src="registration.js"></script>
     <script src="counter.js"></script>
@@ -288,6 +304,28 @@
                     if (e.target === createLobbyModal) {
                         if (typeof closeCreateLobbyModal === 'function') {
                             closeCreateLobbyModal();
+                        }
+                    }
+                });
+            }
+            
+            // Обработчик закрытия админского модального окна
+            const closeAdminModalBtn = document.getElementById('closeAdminModal');
+            if (closeAdminModalBtn) {
+                closeAdminModalBtn.addEventListener('click', () => {
+                    if (typeof closeAdminModal === 'function') {
+                        closeAdminModal();
+                    }
+                });
+            }
+            
+            // Закрытие при клике вне админского модального окна
+            const adminModal = document.getElementById('adminModal');
+            if (adminModal) {
+                adminModal.addEventListener('click', (e) => {
+                    if (e.target === adminModal) {
+                        if (typeof closeAdminModal === 'function') {
+                            closeAdminModal();
                         }
                     }
                 });
