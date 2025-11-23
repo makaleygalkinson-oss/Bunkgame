@@ -40,7 +40,7 @@ function initReadySystem() {
             if (typeof window !== 'undefined') {
                 window.currentUserId = currentUserId;
             }
-            console.log('✅ Пользователь авторизован');
+            console.log('✅ Пользователь авторизован, userId:', currentUserId);
             
             // Проверяем lobby_id - если игрок в лобби, перекидываем на game.html
             const { data: userData, error: userError } = await supabase
@@ -72,24 +72,40 @@ function initReadySystem() {
             updateReadyCountVisibility(); // Скрываем счётчик
             hideStartGameButton();
             stopLobbyCheckInterval(); // Останавливаем проверку лобби
+            // Активируем кнопку Ready даже для неавторизованных (она покажет сообщение)
+            const readyBtn = document.getElementById('readyBtn');
+            if (readyBtn) {
+                readyBtn.disabled = false;
+                readyBtn.style.opacity = '1';
+                readyBtn.style.cursor = 'pointer';
+                readyBtn.style.pointerEvents = 'auto';
+            }
         }
     }).catch(err => {
         console.error('❌ Ошибка проверки сессии:', err);
         updateReadyCountVisibility(); // Скрываем счётчик при ошибке
         hideStartGameButton();
+        // Активируем кнопку Ready даже при ошибке
+        const readyBtn = document.getElementById('readyBtn');
+        if (readyBtn) {
+            readyBtn.disabled = false;
+            readyBtn.style.opacity = '1';
+            readyBtn.style.cursor = 'pointer';
+            readyBtn.style.pointerEvents = 'auto';
+        }
     });
 
     // Отслеживание изменений авторизации
     supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('🔄 Изменение авторизации:', event);
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && session && session.user) {
+            const currentUserId = session.user.id;
             if (typeof window !== 'undefined') {
-                window.currentUserId = session.user.id;
+                window.currentUserId = currentUserId;
             }
-            console.log('✅ Вход выполнен');
+            console.log('✅ Вход выполнен, userId:', currentUserId);
             
             // Проверяем lobby_id - если игрок в лобби, перекидываем на game.html
-            const currentUserId = getCurrentUserId();
             const { data: userData, error: userError } = await supabase
                 .from('users')
                 .select('lobby_id')
@@ -144,6 +160,14 @@ function initReadySystem() {
                 clearInterval(window.readyCountInterval);
                 window.readyCountInterval = null;
             }
+            // Активируем кнопку Ready для неавторизованных
+            const readyBtn = document.getElementById('readyBtn');
+            if (readyBtn) {
+                readyBtn.disabled = false;
+                readyBtn.style.opacity = '1';
+                readyBtn.style.cursor = 'pointer';
+                readyBtn.style.pointerEvents = 'auto';
+            }
         }
     });
 }
@@ -156,6 +180,16 @@ function showReadySection() {
         console.log('✅ Ready секция показана');
         
         updateReadyCountVisibility();
+        
+        // Принудительно активируем кнопку Ready
+        const readyBtn = document.getElementById('readyBtn');
+        if (readyBtn) {
+            readyBtn.disabled = false;
+            readyBtn.style.opacity = '1';
+            readyBtn.style.cursor = 'pointer';
+            readyBtn.style.pointerEvents = 'auto';
+            console.log('✅ Кнопка Ready активирована');
+        }
     } else {
         console.error('❌ Элемент readySection не найден');
     }
@@ -198,10 +232,23 @@ function setupReadySystem() {
     const newReadyBtn = readyBtn.cloneNode(true);
     readyBtn.parentNode.replaceChild(newReadyBtn, readyBtn);
 
+    // Активируем кнопку сразу (принудительно)
+    newReadyBtn.disabled = false;
+    newReadyBtn.removeAttribute('disabled');
+    newReadyBtn.style.opacity = '1';
+    newReadyBtn.style.cursor = 'pointer';
+    newReadyBtn.style.pointerEvents = 'auto';
+    newReadyBtn.style.userSelect = 'none';
+    newReadyBtn.style.webkitUserSelect = 'none';
+    console.log('✅ Кнопка Ready активирована при настройке');
+
     // Проверяем текущий статус (только для авторизованных)
     const currentUserId = getCurrentUserId();
     if (currentUserId) {
         checkCurrentReadyStatus();
+    } else {
+        // Если не авторизован, всё равно активируем кнопку (она покажет сообщение)
+        updateReadyButton(false);
     }
 
     // Обработчик нажатия на кнопку Ready
@@ -209,13 +256,28 @@ function setupReadySystem() {
         e.preventDefault();
         e.stopPropagation();
         
-        const currentUserId = getCurrentUserId();
-        // Если не авторизован - показываем сообщение и открываем окно входа
+        console.log('🔘 Кнопка Ready нажата');
+        
+        // Проверяем авторизацию заново (на случай, если она изменилась)
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUserId = session?.user?.id || getCurrentUserId();
+        
         if (!currentUserId) {
+            console.log('ℹ️ Пользователь не авторизован, показываем сообщение');
             showAuthRequiredMessage();
+            // Открываем окно входа
+            if (typeof openModal === 'function') {
+                openModal('loginModal');
+            }
             return;
         }
         
+        // Обновляем currentUserId на случай, если он не был установлен
+        if (typeof window !== 'undefined') {
+            window.currentUserId = currentUserId;
+        }
+        
+        console.log('✅ Пользователь авторизован, переключаем статус готовности');
         // Позволяем переключать статус готовности
         await toggleReadyStatus();
     });
@@ -488,13 +550,17 @@ function removeReadyStatusSync() {
 // Обновление текста кнопки
 async function updateReadyButton(ready) {
     const readyBtn = document.getElementById('readyBtn');
-    if (!readyBtn) return;
+    if (!readyBtn) {
+        console.warn('⚠️ Кнопка readyBtn не найдена при обновлении');
+        return;
+    }
     
     // Всегда активируем кнопку - если пользователь на главной странице, он может использовать её
-    console.log('✅ Кнопка Ready активна');
+    console.log('✅ Кнопка Ready активна, статус:', ready ? 'Ready' : 'Not Ready');
     readyBtn.disabled = false;
     readyBtn.style.opacity = '1';
     readyBtn.style.cursor = 'pointer';
+    readyBtn.style.pointerEvents = 'auto';
     readyBtn.textContent = ready ? 'Not Ready' : 'Ready';
     readyBtn.classList.toggle('ready-active', ready);
 }
@@ -906,15 +972,17 @@ function startReadySystem() {
     
     // Дополнительная проверка при полной загрузке страницы
     // Это важно при возврате на страницу после выхода из лобби
-    window.addEventListener('load', async () => {
+    const checkOnLoad = async () => {
         if (typeof supabase !== 'undefined') {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session && session.user) {
-                if (typeof window !== 'undefined') {
-                    window.currentUserId = session.user.id;
-                }
-                const currentUserId = getCurrentUserId();
-                if (currentUserId) {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session && session.user) {
+                    const currentUserId = session.user.id;
+                    if (typeof window !== 'undefined') {
+                        window.currentUserId = currentUserId;
+                    }
+                    console.log('🔄 Страница полностью загружена, userId:', currentUserId);
+                    
                     // Проверяем, что пользователь не в лобби
                     const { data: userData } = await supabase
                         .from('users')
@@ -924,13 +992,36 @@ function startReadySystem() {
                     
                     // Если пользователь не в лобби (lobby_id = 0), показываем кнопку START GAME
                     if (!userData || userData.lobby_id === 0) {
-                        console.log('🔄 Страница полностью загружена, проверяем кнопку START GAME');
+                        console.log('🔄 Пользователь не в лобби, проверяем кнопку START GAME и Ready');
                         await checkAdminForStartButton();
+                        await checkCurrentReadyStatus();
+                    }
+                } else {
+                    console.log('ℹ️ Пользователь не авторизован при загрузке страницы');
+                    // Активируем кнопку Ready для неавторизованных
+                    const readyBtn = document.getElementById('readyBtn');
+                    if (readyBtn) {
+                        readyBtn.disabled = false;
+                        readyBtn.style.opacity = '1';
+                        readyBtn.style.cursor = 'pointer';
+                        readyBtn.style.pointerEvents = 'auto';
                     }
                 }
+            } catch (err) {
+                console.error('❌ Ошибка при проверке после загрузки:', err);
             }
         }
-    });
+    };
+    
+    // Проверяем сразу и при полной загрузке
+    if (document.readyState === 'complete') {
+        checkOnLoad();
+    } else {
+        window.addEventListener('load', checkOnLoad);
+    }
+    
+    // Также проверяем через небольшую задержку для гарантии
+    setTimeout(checkOnLoad, 1000);
 }
 
 // Запускаем при загрузке DOM
@@ -949,29 +1040,37 @@ if (document.readyState === 'loading') {
 // Также запускаем с задержкой для гарантии загрузки всех скриптов
 setTimeout(() => {
     console.log('🔄 Повторная проверка инициализации Ready системы');
-    showReadySection(); // Убеждаемся, что кнопка видна
+    showReadySection(); // Убеждаемся, что кнопка видна и активна
     if (typeof supabase !== 'undefined') {
         startReadySystem();
         // Дополнительная проверка кнопки START GAME при возврате на страницу
         supabase.auth.getSession().then(async ({ data: { session } }) => {
             if (session && session.user) {
+                const currentUserId = session.user.id;
                 if (typeof window !== 'undefined') {
-                    window.currentUserId = session.user.id;
+                    window.currentUserId = currentUserId;
                 }
                 // Проверяем, что пользователь не в лобби
-                const currentUserId = getCurrentUserId();
-                if (currentUserId) {
-                    const { data: userData } = await supabase
-                        .from('users')
-                        .select('lobby_id')
-                        .eq('id', currentUserId)
-                        .maybeSingle();
-                    
-                    // Если пользователь не в лобби (lobby_id = 0), показываем кнопку START GAME
-                    if (!userData || userData.lobby_id === 0) {
-                        console.log('🔄 Пользователь вернулся на главную, проверяем кнопку START GAME');
-                        await checkAdminForStartButton();
-                    }
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('lobby_id')
+                    .eq('id', currentUserId)
+                    .maybeSingle();
+                
+                // Если пользователь не в лобби (lobby_id = 0), показываем кнопку START GAME
+                if (!userData || userData.lobby_id === 0) {
+                    console.log('🔄 Пользователь вернулся на главную, проверяем кнопку START GAME');
+                    await checkAdminForStartButton();
+                    await checkCurrentReadyStatus();
+                }
+            } else {
+                // Даже если не авторизован, активируем кнопку Ready
+                const readyBtn = document.getElementById('readyBtn');
+                if (readyBtn) {
+                    readyBtn.disabled = false;
+                    readyBtn.style.opacity = '1';
+                    readyBtn.style.cursor = 'pointer';
+                    readyBtn.style.pointerEvents = 'auto';
                 }
             }
         });
@@ -983,22 +1082,30 @@ window.addEventListener('focus', () => {
     if (typeof supabase !== 'undefined') {
         supabase.auth.getSession().then(async ({ data: { session } }) => {
             if (session && session.user) {
+                const currentUserId = session.user.id;
                 if (typeof window !== 'undefined') {
-                    window.currentUserId = session.user.id;
+                    window.currentUserId = currentUserId;
                 }
-                const currentUserId = getCurrentUserId();
-                if (currentUserId) {
-                    const { data: userData } = await supabase
-                        .from('users')
-                        .select('lobby_id')
-                        .eq('id', currentUserId)
-                        .maybeSingle();
-                    
-                    // Если пользователь не в лобби, показываем кнопку START GAME
-                    if (!userData || userData.lobby_id === 0) {
-                        console.log('🔄 Страница в фокусе, проверяем кнопку START GAME');
-                        await checkAdminForStartButton();
-                    }
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('lobby_id')
+                    .eq('id', currentUserId)
+                    .maybeSingle();
+                
+                // Если пользователь не в лобби, показываем кнопку START GAME
+                if (!userData || userData.lobby_id === 0) {
+                    console.log('🔄 Страница в фокусе, проверяем кнопку START GAME и Ready');
+                    await checkAdminForStartButton();
+                    await checkCurrentReadyStatus();
+                }
+            } else {
+                // Активируем кнопку Ready даже для неавторизованных
+                const readyBtn = document.getElementById('readyBtn');
+                if (readyBtn) {
+                    readyBtn.disabled = false;
+                    readyBtn.style.opacity = '1';
+                    readyBtn.style.cursor = 'pointer';
+                    readyBtn.style.pointerEvents = 'auto';
                 }
             }
         });
