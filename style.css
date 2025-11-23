@@ -726,6 +726,7 @@ body {
     padding-left: 0;
     padding-right: 0;
     text-align: center;
+    position: relative;
 }
 
 .game-title {
@@ -793,6 +794,16 @@ body {
     max-width: 100%;
     width: 100%;
     position: relative;
+}
+
+/* Центрирование карточки игрока относительно надписи ИГРА */
+.game-center-column {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    flex: 0 0 auto;
+    width: 450px;
+    z-index: 10;
 }
 
 .game-left-column {
