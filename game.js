@@ -291,9 +291,6 @@ async function loadPlayersInfo() {
                     </div>
                 </div>
             `;
-            
-            // Настраиваем обработчики для значков разблокировки
-            setupRevealIcons(currentPlayer.id);
         } else {
             currentPlayerCardEl.innerHTML = '';
         }
@@ -336,6 +333,11 @@ async function loadPlayersInfo() {
             }).join('');
             
             playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
+            
+            // Настраиваем обработчики для значков разблокировки после создания всех карточек
+            if (currentPlayer) {
+                setupRevealIcons(currentPlayer.id);
+            }
         }
         
     } catch (err) {
@@ -392,27 +394,37 @@ async function loadVoting() {
 
 // Настройка значков разблокировки
 function setupRevealIcons(currentPlayerId) {
-    const revealIcons = document.querySelectorAll('.reveal-icon');
+    // Используем делегирование событий для значков
+    const currentPlayerCard = document.getElementById('currentPlayerCard');
+    if (!currentPlayerCard) return;
     
-    revealIcons.forEach(icon => {
-        icon.addEventListener('click', (e) => {
-            e.stopPropagation(); // Предотвращаем переворот карточки
-            const itemType = icon.getAttribute('data-reveal');
-            
-            // Убираем blur с соответствующего пункта в карточке текущего игрока
-            const currentItem = document.querySelector(`#currentPlayerCard .player-info-item[data-item="${itemType}"]`);
-            if (currentItem) {
-                currentItem.classList.remove('blurred');
-                icon.style.opacity = '0.5'; // Делаем иконку полупрозрачной после использования
-                icon.style.cursor = 'not-allowed';
-            }
-            
-            // Убираем blur с соответствующего пункта в карточке этого игрока среди других игроков
-            const otherItems = document.querySelectorAll(`.player-card-info .player-info-item[data-item="${itemType}"][data-player-id="${currentPlayerId}"]`);
-            otherItems.forEach(item => {
-                item.classList.remove('blurred');
-            });
+    currentPlayerCard.addEventListener('click', (e) => {
+        const icon = e.target.closest('.reveal-icon');
+        if (!icon) return;
+        
+        e.stopPropagation(); // Предотвращаем переворот карточки
+        const itemType = icon.getAttribute('data-reveal');
+        
+        // Проверяем, не использован ли уже этот значок
+        if (icon.style.opacity === '0.5') {
+            return; // Уже использован
+        }
+        
+        // Убираем blur с соответствующего пункта в карточке текущего игрока (если есть)
+        const currentItem = currentPlayerCard.querySelector(`.player-info-item[data-item="${itemType}"]`);
+        if (currentItem) {
+            currentItem.classList.remove('blurred');
+        }
+        
+        // Убираем blur с соответствующего пункта в карточке этого игрока среди других игроков
+        const otherItems = document.querySelectorAll(`.player-card-info .player-info-item[data-item="${itemType}"][data-player-id="${currentPlayerId}"]`);
+        otherItems.forEach(item => {
+            item.classList.remove('blurred');
         });
+        
+        // Делаем иконку неактивной после использования
+        icon.style.opacity = '0.5';
+        icon.style.cursor = 'not-allowed';
     });
 }
 
