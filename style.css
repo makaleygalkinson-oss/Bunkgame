@@ -828,11 +828,12 @@ body {
 
 /* Блок с игроками */
 .players-block {
-    min-height: 400px;
+    min-height: 600px;
+    margin-left: 2rem;
 }
 
 .players-block .game-block-content {
-    min-height: 350px;
+    min-height: 550px;
 }
 
 /* Карточки игроков */
@@ -870,10 +871,16 @@ body {
 
 .players-list-container {
     margin-top: 1.5rem;
+    margin-left: 2rem;
 }
 
 .player-card-block {
     margin-bottom: 1.5rem;
+    min-height: 200px;
+}
+
+.player-card-block .game-block-content {
+    min-height: 150px;
 }
 
 /* Модальное окно лобби */
