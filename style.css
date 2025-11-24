@@ -947,17 +947,17 @@ body {
     gap: 1rem;
 }
 
-.players-section {
-    margin-top: 1.5rem;
+.players-bottom-section {
     width: 100%;
+    padding: 2rem;
+    margin-top: 3rem;
 }
 
 .players-list-container {
-    margin-top: 1.5rem;
-    margin-left: 2rem;
-    width: calc(100% - 2rem);
+    width: 100%;
     display: flex;
     justify-content: center;
+    align-items: center;
 }
 
 .players-list {

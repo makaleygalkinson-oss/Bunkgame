@@ -41,8 +41,23 @@
                     </div>
                 </div>
                 
-                <!-- Центральная колонка: пустая -->
+                <!-- Центральная колонка: блок с игроками -->
                 <div class="game-center-column">
+                    <div class="flip-card" style="min-height: 900px; margin-left: 2rem;">
+                        <div class="flip-card-inner flipped">
+                            <div class="flip-card-front game-block players-block">
+                                <div class="game-block-header">
+                                    <h2 class="game-block-title" id="currentPlayerName">Загрузка...</h2>
+                                </div>
+                                <div class="game-block-content" id="currentPlayerCard">
+                                    <p>Загрузка...</p>
+                                </div>
+                            </div>
+                            <div class="flip-card-back">
+                                <img src="bunker-logo.png" alt="BUNKER THE BOARD GAME" class="bunker-logo">
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Правая колонка: большой блок -->
@@ -64,7 +79,7 @@
                     </div>
                     
                     <!-- Блок СЕКРЕТНАЯ ИНФОРМАЦИЯ БУНКЕРА -->
-                    <div class="flip-card" style="min-height: 500px; margin-left: -250px; width: calc(100% + 250px); margin-bottom: 1.5rem;">
+                    <div class="flip-card" style="min-height: 500px; margin-left: -250px; width: calc(100% + 250px);">
                         <div class="flip-card-inner flipped">
                             <div class="flip-card-front game-block bunker-secret-block">
                                 <div class="game-block-header">
@@ -80,34 +95,19 @@
                         </div>
                     </div>
                     
-                    <!-- Блок с игроками под секретной информацией -->
-                    <div class="players-section">
-                        <div class="flip-card" style="min-height: 900px; margin-left: 2rem; width: calc(100% - 2rem);">
-                            <div class="flip-card-inner flipped">
-                                <div class="flip-card-front game-block players-block">
-                                    <div class="game-block-header">
-                                        <h2 class="game-block-title" id="currentPlayerName">Загрузка...</h2>
-                                    </div>
-                                    <div class="game-block-content" id="currentPlayerCard">
-                                        <p>Загрузка...</p>
-                                    </div>
-                                </div>
-                                <div class="flip-card-back">
-                                    <img src="bunker-logo.png" alt="BUNKER THE BOARD GAME" class="bunker-logo">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="players-list-container" id="playersContent">
-                            <!-- Карточки других игроков будут здесь -->
-                        </div>
-                    </div>
-                    
                     <!-- Блок информации о лобби под блоком секретной информации -->
                     <div class="game-info-container">
                         <div class="game-info" id="gameInfo">
                             <p>Загрузка информации о лобби...</p>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Карточки других игроков внизу страницы -->
+            <div class="players-bottom-section">
+                <div class="players-list-container" id="playersContent">
+                    <!-- Карточки других игроков будут здесь -->
                 </div>
             </div>
         </div>
