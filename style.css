@@ -1064,6 +1064,14 @@ body {
     margin-right: 0.5rem;
 }
 
+.blurred-text {
+    filter: blur(5px);
+    user-select: none;
+    pointer-events: none;
+    transition: filter 0.3s ease;
+    display: inline-block;
+}
+
 
 .bunker-card-info {
     padding: 1.5rem;

@@ -286,15 +286,15 @@ async function loadPlayersInfo() {
                                     <h2 class="game-block-title">${playerName}</h2>
                                 </div>
                                 <div class="game-block-content player-card-info">
-                                    <div class="player-info-item"><strong>Пол и возраст:</strong> ${playerData.genderAge}</div>
-                                    <div class="player-info-item"><strong>Профессия:</strong> ${playerData.profession}</div>
-                                    <div class="player-info-item"><strong>Состояние здоровья:</strong> ${playerData.health}</div>
-                                    <div class="player-info-item"><strong>Хобби:</strong> ${playerData.hobby}</div>
-                                    <div class="player-info-item"><strong>Фобия:</strong> ${playerData.phobia}</div>
-                                    <div class="player-info-item"><strong>Факт №1:</strong> ${playerData.fact1}</div>
-                                    <div class="player-info-item"><strong>Факт №2:</strong> ${playerData.fact2}</div>
-                                    <div class="player-info-item"><strong>Карточка действия №1:</strong> ${playerData.action1}</div>
-                                    <div class="player-info-item"><strong>Карточка действия №2:</strong> ${playerData.action2}</div>
+                                    <div class="player-info-item"><strong>Пол и возраст:</strong> <span class="blurred-text">${playerData.genderAge}</span></div>
+                                    <div class="player-info-item"><strong>Профессия:</strong> <span class="blurred-text">${playerData.profession}</span></div>
+                                    <div class="player-info-item"><strong>Состояние здоровья:</strong> <span class="blurred-text">${playerData.health}</span></div>
+                                    <div class="player-info-item"><strong>Хобби:</strong> <span class="blurred-text">${playerData.hobby}</span></div>
+                                    <div class="player-info-item"><strong>Фобия:</strong> <span class="blurred-text">${playerData.phobia}</span></div>
+                                    <div class="player-info-item"><strong>Факт №1:</strong> <span class="blurred-text">${playerData.fact1}</span></div>
+                                    <div class="player-info-item"><strong>Факт №2:</strong> <span class="blurred-text">${playerData.fact2}</span></div>
+                                    <div class="player-info-item"><strong>Карточка действия №1:</strong> <span class="blurred-text">${playerData.action1}</span></div>
+                                    <div class="player-info-item"><strong>Карточка действия №2:</strong> <span class="blurred-text">${playerData.action2}</span></div>
                                 </div>
                             </div>
                             <div class="flip-card-back">
