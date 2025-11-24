@@ -253,17 +253,47 @@ async function loadPlayersInfo() {
             const currentPlayerData = generatePlayerCardData(currentPlayer.id);
             currentPlayerCardEl.innerHTML = `
                 <div class="player-card-info">
-                    <div class="player-info-item"><strong>Пол и возраст:</strong> ${currentPlayerData.genderAge}</div>
-                    <div class="player-info-item"><strong>Профессия:</strong> ${currentPlayerData.profession}</div>
-                    <div class="player-info-item"><strong>Состояние здоровья:</strong> ${currentPlayerData.health}</div>
-                    <div class="player-info-item"><strong>Хобби:</strong> ${currentPlayerData.hobby}</div>
-                    <div class="player-info-item"><strong>Фобия:</strong> ${currentPlayerData.phobia}</div>
-                    <div class="player-info-item"><strong>Факт №1:</strong> ${currentPlayerData.fact1}</div>
-                    <div class="player-info-item"><strong>Факт №2:</strong> ${currentPlayerData.fact2}</div>
-                    <div class="player-info-item"><strong>Карточка действия №1:</strong> ${currentPlayerData.action1}</div>
-                    <div class="player-info-item"><strong>Карточка действия №2:</strong> ${currentPlayerData.action2}</div>
+                    <div class="player-info-item blurred" data-item="genderAge">
+                        <span class="item-content"><strong>Пол и возраст:</strong> ${currentPlayerData.genderAge}</span>
+                        <span class="reveal-icon" data-reveal="genderAge">👁️</span>
+                    </div>
+                    <div class="player-info-item blurred" data-item="profession">
+                        <span class="item-content"><strong>Профессия:</strong> ${currentPlayerData.profession}</span>
+                        <span class="reveal-icon" data-reveal="profession">👁️</span>
+                    </div>
+                    <div class="player-info-item blurred" data-item="health">
+                        <span class="item-content"><strong>Состояние здоровья:</strong> ${currentPlayerData.health}</span>
+                        <span class="reveal-icon" data-reveal="health">👁️</span>
+                    </div>
+                    <div class="player-info-item blurred" data-item="hobby">
+                        <span class="item-content"><strong>Хобби:</strong> ${currentPlayerData.hobby}</span>
+                        <span class="reveal-icon" data-reveal="hobby">👁️</span>
+                    </div>
+                    <div class="player-info-item blurred" data-item="phobia">
+                        <span class="item-content"><strong>Фобия:</strong> ${currentPlayerData.phobia}</span>
+                        <span class="reveal-icon" data-reveal="phobia">👁️</span>
+                    </div>
+                    <div class="player-info-item blurred" data-item="fact1">
+                        <span class="item-content"><strong>Факт №1:</strong> ${currentPlayerData.fact1}</span>
+                        <span class="reveal-icon" data-reveal="fact1">👁️</span>
+                    </div>
+                    <div class="player-info-item blurred" data-item="fact2">
+                        <span class="item-content"><strong>Факт №2:</strong> ${currentPlayerData.fact2}</span>
+                        <span class="reveal-icon" data-reveal="fact2">👁️</span>
+                    </div>
+                    <div class="player-info-item blurred" data-item="action1">
+                        <span class="item-content"><strong>Карточка действия №1:</strong> ${currentPlayerData.action1}</span>
+                        <span class="reveal-icon" data-reveal="action1">👁️</span>
+                    </div>
+                    <div class="player-info-item blurred" data-item="action2">
+                        <span class="item-content"><strong>Карточка действия №2:</strong> ${currentPlayerData.action2}</span>
+                        <span class="reveal-icon" data-reveal="action2">👁️</span>
+                    </div>
                 </div>
             `;
+            
+            // Настраиваем обработчики для значков разблокировки
+            setupRevealIcons(currentPlayer.id);
         } else {
             currentPlayerCardEl.innerHTML = '';
         }
@@ -279,22 +309,22 @@ async function loadPlayersInfo() {
                 const playerData = generatePlayerCardData(player.id);
                 
                 return `
-                    <div class="flip-card" style="min-height: 900px; width: 468px; flex-shrink: 0;">
+                    <div class="flip-card" style="min-height: 900px; width: 468px; flex-shrink: 0;" data-player-id="${player.id}">
                         <div class="flip-card-inner flipped">
                             <div class="flip-card-front game-block player-card-block">
                                 <div class="game-block-header">
                                     <h2 class="game-block-title">${playerName}</h2>
                                 </div>
                                 <div class="game-block-content player-card-info">
-                                    <div class="player-info-item"><strong>Пол и возраст:</strong> ${playerData.genderAge}</div>
-                                    <div class="player-info-item"><strong>Профессия:</strong> ${playerData.profession}</div>
-                                    <div class="player-info-item"><strong>Состояние здоровья:</strong> ${playerData.health}</div>
-                                    <div class="player-info-item"><strong>Хобби:</strong> ${playerData.hobby}</div>
-                                    <div class="player-info-item"><strong>Фобия:</strong> ${playerData.phobia}</div>
-                                    <div class="player-info-item"><strong>Факт №1:</strong> ${playerData.fact1}</div>
-                                    <div class="player-info-item"><strong>Факт №2:</strong> ${playerData.fact2}</div>
-                                    <div class="player-info-item"><strong>Карточка действия №1:</strong> ${playerData.action1}</div>
-                                    <div class="player-info-item"><strong>Карточка действия №2:</strong> ${playerData.action2}</div>
+                                    <div class="player-info-item blurred" data-item="genderAge" data-player-id="${player.id}"><strong>Пол и возраст:</strong> ${playerData.genderAge}</div>
+                                    <div class="player-info-item blurred" data-item="profession" data-player-id="${player.id}"><strong>Профессия:</strong> ${playerData.profession}</div>
+                                    <div class="player-info-item blurred" data-item="health" data-player-id="${player.id}"><strong>Состояние здоровья:</strong> ${playerData.health}</div>
+                                    <div class="player-info-item blurred" data-item="hobby" data-player-id="${player.id}"><strong>Хобби:</strong> ${playerData.hobby}</div>
+                                    <div class="player-info-item blurred" data-item="phobia" data-player-id="${player.id}"><strong>Фобия:</strong> ${playerData.phobia}</div>
+                                    <div class="player-info-item blurred" data-item="fact1" data-player-id="${player.id}"><strong>Факт №1:</strong> ${playerData.fact1}</div>
+                                    <div class="player-info-item blurred" data-item="fact2" data-player-id="${player.id}"><strong>Факт №2:</strong> ${playerData.fact2}</div>
+                                    <div class="player-info-item blurred" data-item="action1" data-player-id="${player.id}"><strong>Карточка действия №1:</strong> ${playerData.action1}</div>
+                                    <div class="player-info-item blurred" data-item="action2" data-player-id="${player.id}"><strong>Карточка действия №2:</strong> ${playerData.action2}</div>
                                 </div>
                             </div>
                             <div class="flip-card-back">
@@ -360,10 +390,41 @@ async function loadVoting() {
     }
 }
 
+// Настройка значков разблокировки
+function setupRevealIcons(currentPlayerId) {
+    const revealIcons = document.querySelectorAll('.reveal-icon');
+    
+    revealIcons.forEach(icon => {
+        icon.addEventListener('click', (e) => {
+            e.stopPropagation(); // Предотвращаем переворот карточки
+            const itemType = icon.getAttribute('data-reveal');
+            
+            // Убираем blur с соответствующего пункта в карточке текущего игрока
+            const currentItem = document.querySelector(`#currentPlayerCard .player-info-item[data-item="${itemType}"]`);
+            if (currentItem) {
+                currentItem.classList.remove('blurred');
+                icon.style.opacity = '0.5'; // Делаем иконку полупрозрачной после использования
+                icon.style.cursor = 'not-allowed';
+            }
+            
+            // Убираем blur с соответствующего пункта в карточке этого игрока среди других игроков
+            const otherItems = document.querySelectorAll(`.player-card-info .player-info-item[data-item="${itemType}"][data-player-id="${currentPlayerId}"]`);
+            otherItems.forEach(item => {
+                item.classList.remove('blurred');
+            });
+        });
+    });
+}
+
 // Настройка переворота карточек
 function setupFlipCards() {
     // Используем делегирование событий для всех карточек
     document.addEventListener('click', (e) => {
+        // Не переворачиваем карточку при клике на иконку разблокировки
+        if (e.target.closest('.reveal-icon')) {
+            return;
+        }
+        
         const flipCard = e.target.closest('.flip-card');
         if (flipCard) {
             const flipCardInner = flipCard.querySelector('.flip-card-inner');
