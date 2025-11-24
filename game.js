@@ -183,13 +183,9 @@ async function loadPlayersInfo() {
         // Создаем карточки для всех игроков, включая текущего
         const playersHTML = players.map(player => {
             const playerName = player.name || player.email || 'Неизвестный';
-            const isCurrentPlayer = player.id === currentUserId;
             return `
-                <div class="player-card ${isCurrentPlayer ? 'current-player' : ''}">
+                <div class="player-card">
                     <div class="player-card-name">${playerName}</div>
-                    <div class="player-card-info">
-                        <p>Игрок в лобби</p>
-                    </div>
                 </div>
             `;
         }).join('');
