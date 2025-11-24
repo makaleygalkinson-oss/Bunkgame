@@ -13,8 +13,8 @@
 </head>
 <body>
     <div class="auth-buttons">
-        <button class="auth-btn" id="loginBtn">Login</button>
         <button class="auth-btn" id="registerBtn">Register</button>
+        <button class="auth-btn" id="loginBtn">Login</button>
     </div>
     <div class="visitor-counter">
         <div class="counter-label">
@@ -40,12 +40,8 @@
                     <span class="title-part">GAMES</span>
                 </h1>
                 <div class="subtitle">ВИЗУАЛЬНАЯ АБСТРАКЦИЯ</div>
-                
-                <!-- Готовность к игре -->
-                <div class="ready-section" id="readySection">
-                    <div class="ready-count" id="readyCount">Игроков готовых к игре: 0</div>
-                    <button class="ready-btn" id="readyBtn">Ready</button>
-                </div>
+                <button class="lobby-btn" id="lobbyBtn">LOBBY</button>
+                <button class="create-lobby-btn" id="createLobbyBtn">Create Lobby</button>
             </header>
 
 
@@ -94,6 +90,48 @@
         </div>
     </div>
 
+    <!-- Модальное окно лобби -->
+    <div class="modal" id="lobbyModal">
+        <div class="modal-content lobby-modal-content">
+            <span class="modal-close" id="closeLobbyModal">&times;</span>
+            <h2 class="modal-title">Активные лобби</h2>
+            <div class="lobby-content" id="lobbyContent">
+                <p class="lobby-loading">Загрузка лобби...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно создания лобби -->
+    <div class="modal" id="createLobbyModal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeCreateLobbyModal">&times;</span>
+            <h2 class="modal-title">Создать лобби</h2>
+            <div class="role-selection">
+                <div class="role-selection-label">Выберите Активные роли:</div>
+                <div class="role-options">
+                    <label class="role-option">
+                        <input type="radio" name="activeRole" value="maniac" checked>
+                        <span class="role-option-text">Маньяк</span>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="activeRole" value="killer">
+                        <span class="role-option-text">Убийца</span>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="activeRole" value="both">
+                        <span class="role-option-text">Маньяк и убийца</span>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="activeRole" value="none">
+                        <span class="role-option-text">Без активных ролей</span>
+                    </label>
+                </div>
+                <div class="form-message" id="createLobbyMessage"></div>
+                <button type="button" class="submit-btn" id="confirmCreateLobbyBtn">Создать лобби</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Модальное окно входа -->
     <div class="modal" id="loginModal">
         <div class="modal-content">
@@ -101,8 +139,8 @@
             <h2 class="modal-title">Вход</h2>
             <form id="loginForm" class="auth-form">
                 <div class="form-group">
-                    <label for="loginEmail">Email</label>
-                    <input type="email" id="loginEmail" name="email" required>
+                    <label for="loginName">Имя (ник)</label>
+                    <input type="text" id="loginName" name="name" required>
                 </div>
                 <div class="form-group">
                     <label for="loginPassword">Пароль</label>
@@ -115,9 +153,146 @@
     </div>
 
     <script src="supabase-config.js"></script>
-    <script src="auth.js"></script>
-    <script src="ready.js"></script>
+    <script src="registration.js"></script>
     <script src="counter.js"></script>
+    <script>
+        // Инициализация кнопок
+        document.addEventListener('DOMContentLoaded', () => {
+            const registerBtn = document.getElementById('registerBtn');
+            const loginBtn = document.getElementById('loginBtn');
+            const closeRegisterModalBtn = document.getElementById('closeRegisterModal');
+            const closeLoginModalBtn = document.getElementById('closeLoginModal');
+            
+            if (registerBtn) {
+                registerBtn.addEventListener('click', () => {
+                    if (typeof openRegisterModal === 'function') {
+                        openRegisterModal();
+                    }
+                });
+            }
+            
+            if (loginBtn) {
+                loginBtn.addEventListener('click', () => {
+                    if (typeof openLoginModal === 'function') {
+                        openLoginModal();
+                    }
+                });
+            }
+            
+            if (closeRegisterModalBtn) {
+                closeRegisterModalBtn.addEventListener('click', () => {
+                    if (typeof closeRegisterModal === 'function') {
+                        closeRegisterModal();
+                    }
+                });
+            }
+            
+            if (closeLoginModalBtn) {
+                closeLoginModalBtn.addEventListener('click', () => {
+                    if (typeof closeLoginModal === 'function') {
+                        closeLoginModal();
+                    }
+                });
+            }
+            
+            // Закрытие при клике вне модального окна
+            const registerModal = document.getElementById('registerModal');
+            const loginModal = document.getElementById('loginModal');
+            
+            if (registerModal) {
+                registerModal.addEventListener('click', (e) => {
+                    if (e.target === registerModal) {
+                        if (typeof closeRegisterModal === 'function') {
+                            closeRegisterModal();
+                        }
+                    }
+                });
+            }
+            
+            if (loginModal) {
+                loginModal.addEventListener('click', (e) => {
+                    if (e.target === loginModal) {
+                        if (typeof closeLoginModal === 'function') {
+                            closeLoginModal();
+                        }
+                    }
+                });
+            }
+            
+            // Инициализация кнопки лобби
+            const lobbyBtn = document.getElementById('lobbyBtn');
+            const closeLobbyModalBtn = document.getElementById('closeLobbyModal');
+            
+            if (lobbyBtn) {
+                lobbyBtn.addEventListener('click', () => {
+                    if (typeof openLobbyModal === 'function') {
+                        openLobbyModal();
+                    }
+                });
+            }
+            
+            if (closeLobbyModalBtn) {
+                closeLobbyModalBtn.addEventListener('click', () => {
+                    if (typeof closeLobbyModal === 'function') {
+                        closeLobbyModal();
+                    }
+                });
+            }
+            
+            // Закрытие при клике вне модального окна лобби
+            const lobbyModal = document.getElementById('lobbyModal');
+            if (lobbyModal) {
+                lobbyModal.addEventListener('click', (e) => {
+                    if (e.target === lobbyModal) {
+                        if (typeof closeLobbyModal === 'function') {
+                            closeLobbyModal();
+                        }
+                    }
+                });
+            }
+            
+            // Инициализация кнопки создания лобби
+            const createLobbyBtn = document.getElementById('createLobbyBtn');
+            const closeCreateLobbyModalBtn = document.getElementById('closeCreateLobbyModal');
+            const confirmCreateLobbyBtn = document.getElementById('confirmCreateLobbyBtn');
+            
+            if (createLobbyBtn) {
+                createLobbyBtn.addEventListener('click', () => {
+                    if (typeof openCreateLobbyModal === 'function') {
+                        openCreateLobbyModal();
+                    }
+                });
+            }
+            
+            if (closeCreateLobbyModalBtn) {
+                closeCreateLobbyModalBtn.addEventListener('click', () => {
+                    if (typeof closeCreateLobbyModal === 'function') {
+                        closeCreateLobbyModal();
+                    }
+                });
+            }
+            
+            if (confirmCreateLobbyBtn) {
+                confirmCreateLobbyBtn.addEventListener('click', () => {
+                    if (typeof createLobby === 'function') {
+                        createLobby();
+                    }
+                });
+            }
+            
+            // Закрытие при клике вне модального окна создания лобби
+            const createLobbyModal = document.getElementById('createLobbyModal');
+            if (createLobbyModal) {
+                createLobbyModal.addEventListener('click', (e) => {
+                    if (e.target === createLobbyModal) {
+                        if (typeof closeCreateLobbyModal === 'function') {
+                            closeCreateLobbyModal();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
 

@@ -13,72 +13,14 @@
 </head>
 <body>
     <div class="game-container">
-        <!-- Блок с информацией о лобби в правом верхнем углу -->
         <div class="game-header-section">
-            <div class="game-info" id="gameInfo">
-                <p class="game-loading">Загрузка информации о лобби...</p>
-            </div>
+            <button class="game-exit-btn" id="exitLobbyBtn">Выйти из лобби</button>
         </div>
         
-        <!-- Кнопка выхода в левом верхнем углу -->
-        <div class="game-exit-section">
-            <button class="game-exit-btn" id="exitLobbyBtn">Exit Lobby</button>
-        </div>
-
-        <!-- Основной контент -->
         <div class="game-content">
             <h1 class="game-title">ИГРА</h1>
-            
-            <!-- Контейнер с блоками -->
-            <div class="game-blocks-container">
-                <!-- Левая колонка с двумя блоками -->
-                <div class="game-left-column">
-                    <!-- Блок "Секретная Информация о бункере" -->
-                    <div class="secret-info-block">
-                        <h2 class="secret-info-title">Секретная Информация о бункере</h2>
-                        <div class="secret-info-content">
-                            <!-- Пока пустой -->
-                        </div>
-                    </div>
-                    
-                    <!-- Блок "Голосование" -->
-                    <div class="voting-block">
-                        <h2 class="voting-title">Голосование</h2>
-                        <div class="voting-content">
-                            <!-- Пока пустой -->
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Центральная колонка с картой текущего игрока -->
-                <div class="game-center-column">
-                    <div class="player-card" id="currentPlayerCard">
-                        <div class="player-card-header">
-                            <span class="player-card-name" id="currentPlayerName">Загрузка...</span>
-                        </div>
-                        <div class="player-card-content">
-                            <!-- Содержимое карты игрока -->
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Правая колонка с "Карточкой бункера" -->
-                <div class="game-right-column">
-                    <div class="bunker-card">
-                        <h2 class="bunker-card-title">Карточка бункера</h2>
-                        <div class="bunker-card-content">
-                            <!-- Пока пустой -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Секция для карт других игроков -->
-            <div class="other-players-section">
-                <h2 class="other-players-title">Другие игроки</h2>
-                <div class="other-players-cards" id="otherPlayersCards">
-                    <!-- Карты других игроков будут добавлены здесь -->
-                </div>
+            <div class="game-info" id="gameInfo">
+                <p>Загрузка информации о лобби...</p>
             </div>
         </div>
     </div>
@@ -87,3 +29,5 @@
     <script src="game.js"></script>
 </body>
 </html>
+
+
