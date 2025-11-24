@@ -640,6 +640,10 @@ body {
     top: 20px;
     right: 20px;
     z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1rem;
 }
 
 .game-exit-btn {
@@ -678,8 +682,7 @@ body {
 }
 
 .game-content {
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
     padding-top: 100px;
     text-align: center;
 }
@@ -695,24 +698,24 @@ body {
 }
 
 .game-info {
-    background: rgba(40, 40, 40, 0.8);
+    background: rgba(40, 40, 40, 0.9);
     backdrop-filter: blur(10px);
     border: 2px solid rgba(150, 150, 150, 0.3);
-    border-radius: 16px;
-    padding: 2rem;
-    margin: 2rem auto;
-    max-width: 600px;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    max-width: 300px;
+    text-align: right;
 }
 
 .game-lobby-info {
-    text-align: left;
+    text-align: right;
     color: #d0d0d0;
-    line-height: 2;
+    line-height: 1.8;
 }
 
 .game-lobby-info p {
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+    font-size: 0.9rem;
 }
 
 .game-lobby-info strong {
@@ -733,7 +736,9 @@ body {
     gap: 2rem;
     margin: 3rem 0;
     align-items: flex-start;
-    justify-content: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    width: 100%;
 }
 
 /* Левая колонка */
@@ -741,15 +746,16 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    flex: 0 0 350px;
+    flex: 0 0 auto;
+    width: 350px;
     min-width: 300px;
 }
 
 /* Правая колонка */
 .game-right-column {
-    flex: 1;
+    flex: 0 0 auto;
+    width: 500px;
     min-width: 400px;
-    max-width: 600px;
 }
 
 /* Блоки игры */
@@ -1203,18 +1209,35 @@ body {
         flex-direction: column;
         gap: 1.5rem;
         margin: 2rem 0;
+        padding: 0 1rem;
     }
     
     .game-left-column {
-        flex: 1;
+        width: 100%;
         min-width: 100%;
         max-width: 100%;
     }
     
     .game-right-column {
-        flex: 1;
+        width: 100%;
         min-width: 100%;
         max-width: 100%;
+    }
+    
+    .game-header-section {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.8rem;
+    }
+    
+    .game-info {
+        max-width: 250px;
+        padding: 0.8rem 1rem;
+    }
+    
+    .game-lobby-info p {
+        font-size: 0.8rem;
+        margin-bottom: 0.6rem;
     }
     
     .game-block-title {
