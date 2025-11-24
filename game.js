@@ -422,12 +422,15 @@ function setupRevealIcons() {
         }
         
         console.log('Разблокировка параметра:', itemType, 'для игрока:', playerId);
+        console.log('Типы данных:', typeof itemType, typeof playerId);
         
         // Сохраняем разблокировку в Supabase
         await saveRevealState(playerId, itemType);
         
-        // Убираем blur локально
-        revealItem(playerId, itemType);
+        // Убираем blur локально (с небольшой задержкой для гарантии)
+        setTimeout(() => {
+            revealItem(playerId, itemType);
+        }, 100);
         
         // Делаем иконку неактивной после использования
         icon.classList.add('used');
@@ -480,15 +483,43 @@ async function saveRevealState(playerId, itemType) {
 
 // Функция для разблокировки пункта (убирает blur)
 function revealItem(playerId, itemType) {
-    // Находим все элементы с данным типом для данного игрока
-    const items = document.querySelectorAll(`.player-info-item[data-item="${itemType}"][data-player-id="${playerId}"]`);
+    console.log('revealItem вызвана:', playerId, itemType);
     
-    items.forEach(item => {
-        const blurredText = item.querySelector('.blurred-text');
-        if (blurredText) {
-            blurredText.classList.remove('blurred-text');
+    // Преобразуем playerId в строку для сравнения
+    const playerIdStr = String(playerId);
+    
+    // Находим все элементы с данным типом для данного игрока
+    // Ищем во всех карточках, включая перевёрнутые
+    const allItems = document.querySelectorAll(`.player-info-item[data-item="${itemType}"]`);
+    console.log('Всего элементов с data-item:', allItems.length);
+    
+    let foundCount = 0;
+    allItems.forEach((item, index) => {
+        const itemPlayerId = item.getAttribute('data-player-id');
+        console.log(`Элемент ${index + 1}: playerId="${itemPlayerId}" (ожидаем "${playerIdStr}")`);
+        
+        // Сравниваем playerId (может быть UUID или число)
+        if (String(itemPlayerId) === playerIdStr) {
+            foundCount++;
+            console.log(`✓ Найден элемент ${index + 1} для игрока ${playerIdStr}`);
+            
+            const blurredText = item.querySelector('.blurred-text');
+            console.log('Найден blurred-text:', blurredText);
+            
+            if (blurredText) {
+                blurredText.classList.remove('blurred-text');
+                console.log('✓ Blur убран с элемента');
+            } else {
+                console.log('✗ blurred-text не найден в элементе');
+            }
         }
     });
+    
+    console.log(`Итого обработано элементов: ${foundCount}`);
+    
+    if (foundCount === 0) {
+        console.error('⚠ Элементы не найдены! Проверьте playerId и itemType');
+    }
 }
 
 // Восстановление состояния разблокированных параметров
