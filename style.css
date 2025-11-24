@@ -866,6 +866,16 @@ body {
     line-height: 1.6;
 }
 
+.player-card.current-player {
+    border-color: rgba(0, 255, 136, 0.5);
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.player-card.current-player .player-card-name {
+    color: #00ff88;
+    text-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+}
+
 .players-list {
     display: flex;
     flex-direction: column;

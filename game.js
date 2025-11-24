@@ -176,23 +176,16 @@ async function loadPlayersInfo() {
         }
         
         if (!players || players.length === 0) {
-            playersContent.innerHTML = '<p>Нет других игроков в лобби</p>';
+            playersContent.innerHTML = '<p>Нет игроков в лобби</p>';
             return;
         }
         
-        // Фильтруем игроков, исключая текущего пользователя
-        const otherPlayers = players.filter(p => p.id !== currentUserId);
-        
-        if (otherPlayers.length === 0) {
-            playersContent.innerHTML = '<p>Вы единственный игрок в лобби</p>';
-            return;
-        }
-        
-        // Создаем карточки для остальных игроков
-        const playersHTML = otherPlayers.map(player => {
+        // Создаем карточки для всех игроков, включая текущего
+        const playersHTML = players.map(player => {
             const playerName = player.name || player.email || 'Неизвестный';
+            const isCurrentPlayer = player.id === currentUserId;
             return `
-                <div class="player-card">
+                <div class="player-card ${isCurrentPlayer ? 'current-player' : ''}">
                     <div class="player-card-name">${playerName}</div>
                     <div class="player-card-info">
                         <p>Игрок в лобби</p>
