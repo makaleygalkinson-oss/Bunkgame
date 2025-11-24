@@ -62,6 +62,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Настраиваем кнопку выхода
         setupExitButton();
         
+        // Настраиваем переворот карточек
+        setupFlipCards();
+        
     } catch (err) {
         console.error('Ошибка инициализации игры:', err);
         window.location.href = 'index.html';
@@ -195,23 +198,44 @@ async function loadPlayersInfo() {
             const otherPlayersHTML = otherPlayers.map(player => {
                 const playerName = player.name || player.email || 'Неизвестный';
                 return `
-                    <div class="game-block player-card-block">
-                        <div class="game-block-header">
-                            <h2 class="game-block-title">${playerName}</h2>
-                        </div>
-                        <div class="game-block-content">
+                    <div class="flip-card">
+                        <div class="flip-card-inner flipped">
+                            <div class="flip-card-front game-block player-card-block">
+                                <div class="game-block-header">
+                                    <h2 class="game-block-title">${playerName}</h2>
+                                </div>
+                                <div class="game-block-content">
+                                </div>
+                            </div>
+                            <div class="flip-card-back">
+                                <img src="bunker-logo.png" alt="BUNKER THE BOARD GAME" class="bunker-logo">
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
             
             playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
+            
+            // Настраиваем переворот для новых карточек
+            setupFlipCards();
         }
         
     } catch (err) {
         console.error('Ошибка загрузки информации о игроках:', err);
         currentPlayerCardEl.innerHTML = '<p class="game-error">Ошибка загрузки информации</p>';
     }
+}
+
+// Настройка переворота карточек
+function setupFlipCards() {
+    const flipCards = document.querySelectorAll('.flip-card-inner');
+    
+    flipCards.forEach(card => {
+        card.addEventListener('click', () => {
+            card.classList.toggle('flipped');
+        });
+    });
 }
 
 // Выход из лобби

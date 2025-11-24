@@ -783,6 +783,52 @@ body {
     min-width: 400px;
 }
 
+/* Flip карточки */
+.flip-card {
+    perspective: 1000px;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.flip-card-inner.flipped {
+    transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.flip-card-back {
+    transform: rotateY(180deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(30, 30, 30, 0.95);
+    border-radius: 16px;
+    border: 2px solid rgba(150, 150, 150, 0.3);
+}
+
+.bunker-logo {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+
 /* Блоки игры */
 .game-block {
     background: rgba(40, 40, 40, 0.8);
@@ -791,6 +837,8 @@ body {
     border-radius: 16px;
     overflow: hidden;
     transition: all 0.3s ease;
+    width: 100%;
+    height: 100%;
 }
 
 .game-block:hover {
@@ -822,11 +870,13 @@ body {
 }
 
 /* Блок голосования */
+.flip-card.voting-block,
 .voting-block {
     min-height: 900px;
 }
 
 /* Блок секретной информации бункера */
+.flip-card.bunker-secret-block,
 .bunker-secret-block {
     min-height: 500px;
     margin-left: -250px;
@@ -839,6 +889,7 @@ body {
 }
 
 /* Блок карточки бункера */
+.flip-card.bunker-card-block,
 .bunker-card-block {
     min-height: 500px;
     margin-left: -250px;
@@ -850,6 +901,7 @@ body {
 }
 
 /* Блок с игроками */
+.flip-card.players-block,
 .players-block {
     min-height: 900px;
     margin-left: 2rem;
@@ -897,6 +949,7 @@ body {
     margin-left: 2rem;
 }
 
+.flip-card.player-card-block,
 .player-card-block {
     margin-bottom: 1.5rem;
     min-height: 900px;
