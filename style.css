@@ -947,26 +947,36 @@ body {
     gap: 1rem;
 }
 
+.players-section {
+    margin-top: 1.5rem;
+    width: 100%;
+}
+
 .players-list-container {
     margin-top: 1.5rem;
-    margin-left: 4rem;
-    width: calc(100% - 4rem);
+    margin-left: 2rem;
+    width: calc(100% - 2rem);
+    display: flex;
+    justify-content: center;
 }
 
 .players-list {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 1rem;
     width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .player-card-block {
-    min-height: 900px;
+    min-height: 400px;
     margin: 0;
+    width: 100%;
 }
 
 .player-card-block .game-block-content {
-    min-height: 850px;
+    min-height: 350px;
 }
 
 /* Модальное окно лобби */
