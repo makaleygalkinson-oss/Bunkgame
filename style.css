@@ -956,20 +956,37 @@ body {
 }
 
 .players-list-container {
-    max-width: 500px;
     width: 100%;
+    max-width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .players-list {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
+    justify-items: center;
+}
+
+@media (max-width: 2000px) {
+    .players-list {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 1500px) {
+    .players-list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 1000px) {
+    .players-list {
+        grid-template-columns: 1fr;
+    }
 }
 
 .player-card-block {
@@ -998,6 +1015,32 @@ body {
     color: #00ff88;
     font-weight: 700;
     margin-right: 0.5rem;
+}
+
+.bunker-card-info {
+    padding: 1.5rem;
+    text-align: left;
+}
+
+.bunker-info-item {
+    margin-bottom: 1rem;
+    color: #d0d0d0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.bunker-info-item strong {
+    color: #00ff88;
+    font-weight: 700;
+    margin-right: 0.5rem;
+}
+
+.bunker-info-subitem {
+    margin-bottom: 0.8rem;
+    margin-left: 1.5rem;
+    color: #d0d0d0;
+    font-size: 0.9rem;
+    line-height: 1.6;
 }
 
 /* Модальное окно лобби */

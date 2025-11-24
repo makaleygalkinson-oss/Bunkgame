@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Загружаем информацию о игроках
         await loadPlayersInfo();
         
+        // Загружаем карточку бункера
+        loadBunkerCard();
+        
         // Настраиваем кнопку выхода
         setupExitButton();
         
@@ -146,6 +149,36 @@ function setupExitButton() {
         
         await exitFromLobby();
     });
+}
+
+// Загрузка карточки бункера
+function loadBunkerCard() {
+    const bunkerCardContent = document.getElementById('bunkerCardContent');
+    if (!bunkerCardContent) return;
+    
+    // Генерируем рандомные значения для карточки бункера
+    const catastrophe = Math.floor(Math.random() * 100) + 1;
+    const catastropheDesc = Math.floor(Math.random() * 100) + 1;
+    const lifetime = Math.floor(Math.random() * 100) + 1;
+    const capacity = Math.floor(Math.random() * 100) + 1;
+    const medpoint = Math.floor(Math.random() * 100) + 1;
+    const mechanicRoom = Math.floor(Math.random() * 100) + 1;
+    const growingRoom = Math.floor(Math.random() * 100) + 1;
+    const specialSupply = Math.floor(Math.random() * 100) + 1;
+    
+    bunkerCardContent.innerHTML = `
+        <div class="bunker-card-info">
+            <div class="bunker-info-item"><strong>Катастрофа:</strong> ${catastrophe}</div>
+            <div class="bunker-info-item"><strong>Описание катастрофы:</strong> ${catastropheDesc}</div>
+            <div class="bunker-info-item"><strong>Срок жизни в бункере:</strong> ${lifetime}</div>
+            <div class="bunker-info-item"><strong>Условия Бункера:</strong> (вместимость: ${capacity} человек)</div>
+            <div class="bunker-info-item"><strong>Оснащение бункера:</strong></div>
+            <div class="bunker-info-subitem">Медпункт: ${medpoint}</div>
+            <div class="bunker-info-subitem">Комната механика: ${mechanicRoom}</div>
+            <div class="bunker-info-subitem">Комната выращивания: ${growingRoom}</div>
+            <div class="bunker-info-item"><strong>Спец.Снабжение:</strong> ${specialSupply}</div>
+        </div>
+    `;
 }
 
 // Генерация стабильных рандомных значений для игрока на основе его ID
