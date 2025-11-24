@@ -253,39 +253,39 @@ async function loadPlayersInfo() {
             const currentPlayerData = generatePlayerCardData(currentPlayer.id);
             currentPlayerCardEl.innerHTML = `
                 <div class="player-card-info">
-                    <div class="player-info-item blurred" data-item="genderAge">
+                    <div class="player-info-item" data-item="genderAge">
                         <span class="item-content"><strong>Пол и возраст:</strong> ${currentPlayerData.genderAge}</span>
                         <span class="reveal-icon" data-reveal="genderAge">👁️</span>
                     </div>
-                    <div class="player-info-item blurred" data-item="profession">
+                    <div class="player-info-item" data-item="profession">
                         <span class="item-content"><strong>Профессия:</strong> ${currentPlayerData.profession}</span>
                         <span class="reveal-icon" data-reveal="profession">👁️</span>
                     </div>
-                    <div class="player-info-item blurred" data-item="health">
+                    <div class="player-info-item" data-item="health">
                         <span class="item-content"><strong>Состояние здоровья:</strong> ${currentPlayerData.health}</span>
                         <span class="reveal-icon" data-reveal="health">👁️</span>
                     </div>
-                    <div class="player-info-item blurred" data-item="hobby">
+                    <div class="player-info-item" data-item="hobby">
                         <span class="item-content"><strong>Хобби:</strong> ${currentPlayerData.hobby}</span>
                         <span class="reveal-icon" data-reveal="hobby">👁️</span>
                     </div>
-                    <div class="player-info-item blurred" data-item="phobia">
+                    <div class="player-info-item" data-item="phobia">
                         <span class="item-content"><strong>Фобия:</strong> ${currentPlayerData.phobia}</span>
                         <span class="reveal-icon" data-reveal="phobia">👁️</span>
                     </div>
-                    <div class="player-info-item blurred" data-item="fact1">
+                    <div class="player-info-item" data-item="fact1">
                         <span class="item-content"><strong>Факт №1:</strong> ${currentPlayerData.fact1}</span>
                         <span class="reveal-icon" data-reveal="fact1">👁️</span>
                     </div>
-                    <div class="player-info-item blurred" data-item="fact2">
+                    <div class="player-info-item" data-item="fact2">
                         <span class="item-content"><strong>Факт №2:</strong> ${currentPlayerData.fact2}</span>
                         <span class="reveal-icon" data-reveal="fact2">👁️</span>
                     </div>
-                    <div class="player-info-item blurred" data-item="action1">
+                    <div class="player-info-item" data-item="action1">
                         <span class="item-content"><strong>Карточка действия №1:</strong> ${currentPlayerData.action1}</span>
                         <span class="reveal-icon" data-reveal="action1">👁️</span>
                     </div>
-                    <div class="player-info-item blurred" data-item="action2">
+                    <div class="player-info-item" data-item="action2">
                         <span class="item-content"><strong>Карточка действия №2:</strong> ${currentPlayerData.action2}</span>
                         <span class="reveal-icon" data-reveal="action2">👁️</span>
                     </div>
