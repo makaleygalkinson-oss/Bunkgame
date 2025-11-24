@@ -1058,37 +1058,10 @@ body {
     transition: filter 0.3s ease;
 }
 
-.blurred-text {
-    filter: blur(5px) !important;
-    user-select: none;
-    pointer-events: none;
-    transition: filter 0.3s ease;
-    display: inline-block;
-}
-
 .player-info-item strong {
     color: #00ff88;
     font-weight: 700;
     margin-right: 0.5rem;
-}
-
-.item-content {
-    flex: 1;
-}
-
-.reveal-icon {
-    cursor: pointer;
-    font-size: 1.2rem;
-    margin-left: 1rem;
-    opacity: 1;
-    transition: opacity 0.3s ease, transform 0.2s ease;
-    user-select: none;
-    filter: none !important;
-}
-
-.reveal-icon:hover {
-    transform: scale(1.2);
-    opacity: 0.8;
 }
 
 
