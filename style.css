@@ -852,6 +852,18 @@ body {
     flex-direction: column;
 }
 
+/* Убираем backdrop-filter для карточек игроков, чтобы blur был только на тексте */
+.player-card-block,
+.flip-card-front.player-card-block {
+    backdrop-filter: none !important;
+    filter: none !important;
+}
+
+.player-card-block .game-block-content {
+    backdrop-filter: none !important;
+    filter: none !important;
+}
+
 .game-block:hover {
     border-color: rgba(200, 200, 200, 0.5);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
@@ -1016,10 +1028,11 @@ body {
 }
 
 .blurred-text {
-    filter: blur(5px);
+    filter: blur(5px) !important;
     user-select: none;
     pointer-events: none;
     transition: filter 0.3s ease;
+    display: inline-block;
 }
 
 .player-info-item strong {
