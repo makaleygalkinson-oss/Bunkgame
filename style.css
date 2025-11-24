@@ -809,7 +809,7 @@ body {
 
 /* Блок голосования */
 .voting-block {
-    min-height: 200px;
+    min-height: 900px;
 }
 
 /* Блок секретной информации бункера */
@@ -820,6 +820,8 @@ body {
 /* Блок карточки бункера */
 .bunker-card-block {
     min-height: 500px;
+    margin-left: -250px;
+    width: calc(100% + 250px);
 }
 
 .bunker-card-block .game-block-content {
