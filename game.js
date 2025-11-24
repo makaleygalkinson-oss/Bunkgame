@@ -132,17 +132,22 @@ async function loadLobbyInfo() {
 // Настройка кнопки выхода
 function setupExitButton() {
     const exitBtn = document.getElementById('exitLobbyBtn');
-    if (!exitBtn) {
-        console.error('❌ Кнопка выхода не найдена');
-        return;
-    }
+    const exitBtnBottom = document.getElementById('exitLobbyBtnBottom');
     
-    exitBtn.addEventListener('click', async () => {
+    const handleExit = async () => {
         const confirmExit = confirm('Вы уверены, что хотите выйти из лобби?');
         if (!confirmExit) return;
         
         await exitFromLobby();
-    });
+    };
+    
+    if (exitBtn) {
+        exitBtn.addEventListener('click', handleExit);
+    }
+    
+    if (exitBtnBottom) {
+        exitBtnBottom.addEventListener('click', handleExit);
+    }
 }
 
 // Загрузка информации о игроках

@@ -635,18 +635,19 @@ body {
     position: relative;
 }
 
-.game-header-left {
-    position: fixed;
-    top: 20px;
-    left: 20px;
+/* Шапка страницы игры */
+.game-page-header {
+    background: rgba(30, 30, 30, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 2px solid rgba(150, 150, 150, 0.3);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    position: sticky;
+    top: 0;
     z-index: 1000;
-}
-
-.game-header-right {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
+    width: 100%;
 }
 
 .game-exit-btn {
@@ -686,8 +687,19 @@ body {
 
 .game-content {
     width: 100%;
-    padding-top: 100px;
+    padding-top: 2rem;
     text-align: center;
+}
+
+.game-info {
+    background: rgba(40, 40, 40, 0.9);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(150, 150, 150, 0.3);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    max-width: 300px;
+    text-align: right;
+    margin: 2rem auto;
 }
 
 .game-title {
@@ -700,14 +712,12 @@ body {
     text-shadow: 0 0 40px rgba(0, 255, 136, 0.6);
 }
 
-.game-info {
-    background: rgba(40, 40, 40, 0.9);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(150, 150, 150, 0.3);
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
-    max-width: 300px;
-    text-align: right;
+.game-exit-btn-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    margin-left: -250px;
+    width: calc(100% + 250px);
 }
 
 .game-lobby-info {
@@ -1307,19 +1317,19 @@ body {
         max-width: 100%;
     }
     
-    .game-header-left {
-        top: 15px;
-        left: 15px;
-    }
-    
-    .game-header-right {
-        top: 15px;
-        right: 15px;
+    .game-page-header {
+        padding: 0.8rem 1rem;
     }
     
     .game-info {
         max-width: 250px;
         padding: 0.8rem 1rem;
+        margin: 1.5rem auto;
+    }
+    
+    .game-exit-btn-container {
+        margin-left: 0;
+        width: 100%;
     }
     
     .game-lobby-info p {
