@@ -2,6 +2,7 @@
 
 let currentLobbyId = null;
 let currentUserId = null;
+let revealRealtimeChannel = null;
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', async () => {
@@ -70,6 +71,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Настраиваем переворот карточек
         setupFlipCards();
+        
+        // Подписываемся на realtime обновления разблокировки
+        subscribeToRevealUpdates();
         
     } catch (err) {
         console.error('Ошибка инициализации игры:', err);
@@ -334,8 +338,10 @@ async function loadPlayersInfo() {
             
             playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
             
-            // Настраиваем обработчики для значков разблокировки после создания всех карточек
+            // Восстанавливаем состояние разблокированных пунктов из sessionStorage
             if (currentPlayer) {
+                restoreRevealStates(currentPlayer.id);
+                // Настраиваем обработчики для значков разблокировки после создания всех карточек
                 setupRevealIcons(currentPlayer.id);
             }
         }
@@ -398,7 +404,8 @@ function setupRevealIcons(currentPlayerId) {
     const currentPlayerCard = document.getElementById('currentPlayerCard');
     if (!currentPlayerCard) return;
     
-    currentPlayerCard.addEventListener('click', (e) => {
+    // Удаляем старые обработчики, если они есть
+    const newHandler = async (e) => {
         const icon = e.target.closest('.reveal-icon');
         if (!icon) return;
         
@@ -406,25 +413,119 @@ function setupRevealIcons(currentPlayerId) {
         const itemType = icon.getAttribute('data-reveal');
         
         // Проверяем, не использован ли уже этот значок
-        if (icon.style.opacity === '0.5') {
+        if (icon.style.opacity === '0.5' || icon.classList.contains('used')) {
             return; // Уже использован
         }
         
-        // Убираем blur с соответствующего пункта в карточке текущего игрока (если есть)
-        const currentItem = currentPlayerCard.querySelector(`.player-info-item[data-item="${itemType}"]`);
-        if (currentItem) {
-            currentItem.classList.remove('blurred');
-        }
+        // Сохраняем разблокировку в БД
+        await saveRevealState(currentPlayerId, itemType);
         
-        // Убираем blur с соответствующего пункта в карточке этого игрока среди других игроков
-        const otherItems = document.querySelectorAll(`.player-card-info .player-info-item[data-item="${itemType}"][data-player-id="${currentPlayerId}"]`);
-        otherItems.forEach(item => {
-            item.classList.remove('blurred');
-        });
+        // Убираем blur локально
+        revealItem(currentPlayerId, itemType);
         
         // Делаем иконку неактивной после использования
         icon.style.opacity = '0.5';
         icon.style.cursor = 'not-allowed';
+        icon.classList.add('used');
+    };
+    
+    // Удаляем предыдущий обработчик, если он был
+    currentPlayerCard.removeEventListener('click', currentPlayerCard._revealHandler);
+    currentPlayerCard._revealHandler = newHandler;
+    currentPlayerCard.addEventListener('click', newHandler);
+}
+
+// Сохранение состояния разблокировки в БД
+async function saveRevealState(playerId, itemType) {
+    try {
+        // Создаем или обновляем запись о разблокировке
+        // Используем таблицу для хранения разблокированных пунктов
+        // Пока сохраняем в sessionStorage для быстрого доступа
+        const revealKey = `revealed_${playerId}_${itemType}`;
+        sessionStorage.setItem(revealKey, 'true');
+        
+        // Можно также сохранить в БД через Supabase, если есть таблица для этого
+        // Пока используем sessionStorage + realtime broadcast
+    } catch (err) {
+        console.error('Ошибка сохранения состояния разблокировки:', err);
+    }
+}
+
+// Функция для разблокировки пункта
+function revealItem(playerId, itemType) {
+    console.log('Разблокировка пункта:', itemType, 'для игрока:', playerId);
+    
+    // Убираем blur с соответствующего пункта в карточке этого игрока среди других игроков
+    const selector = `.player-card-info .player-info-item[data-item="${itemType}"][data-player-id="${playerId}"]`;
+    console.log('Селектор:', selector);
+    
+    const otherItems = document.querySelectorAll(selector);
+    console.log('Найдено элементов:', otherItems.length);
+    
+    otherItems.forEach(item => {
+        console.log('Убираем blur с элемента:', item);
+        item.classList.remove('blurred');
+    });
+    
+    // Также проверяем все элементы с этим itemType и playerId
+    const allItems = document.querySelectorAll(`[data-item="${itemType}"][data-player-id="${playerId}"]`);
+    console.log('Всего элементов с такими атрибутами:', allItems.length);
+    allItems.forEach(item => {
+        item.classList.remove('blurred');
+    });
+}
+
+// Подписка на realtime обновления разблокировки
+function subscribeToRevealUpdates() {
+    if (!currentLobbyId) return;
+    
+    // Отписываемся от предыдущей подписки
+    unsubscribeFromRevealUpdates();
+    
+    // Подписываемся на изменения в таблице users для обновления карточек игроков
+    revealRealtimeChannel = supabase
+        .channel(`reveal-updates-${currentLobbyId}`)
+        .on('postgres_changes', 
+            { 
+                event: '*',
+                schema: 'public',
+                table: 'users',
+                filter: `lobby_id=eq.${currentLobbyId}`
+            },
+            (payload) => {
+                console.log('Обновление игроков:', payload);
+                // Перезагружаем информацию о игроках при изменениях
+                loadPlayersInfo();
+            }
+        )
+        .subscribe();
+}
+
+// Отписка от обновлений
+function unsubscribeFromRevealUpdates() {
+    if (revealRealtimeChannel) {
+        supabase.removeChannel(revealRealtimeChannel);
+        revealRealtimeChannel = null;
+    }
+}
+
+// Восстановление состояния разблокированных пунктов
+function restoreRevealStates(playerId) {
+    const itemTypes = ['genderAge', 'profession', 'health', 'hobby', 'phobia', 'fact1', 'fact2', 'action1', 'action2'];
+    
+    itemTypes.forEach(itemType => {
+        const revealKey = `revealed_${playerId}_${itemType}`;
+        if (sessionStorage.getItem(revealKey) === 'true') {
+            revealItem(playerId, itemType);
+            
+            // Помечаем иконку как использованную
+            const icon = document.querySelector(`.reveal-icon[data-reveal="${itemType}"]`);
+            if (icon) {
+                icon.style.opacity = '0.5';
+                icon.style.cursor = 'not-allowed';
+                icon.classList.add('used');
+            }
+        }
     });
 }
 
@@ -477,6 +578,9 @@ async function exitFromLobby() {
         
         // Удаляем информацию о лобби из sessionStorage
         sessionStorage.removeItem('currentLobbyId');
+        
+        // Отписываемся от realtime обновлений
+        unsubscribeFromRevealUpdates();
         
         // Возвращаемся на главную страницу
         window.location.href = 'index.html';
