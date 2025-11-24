@@ -62,6 +62,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Загружаем карточку бункера
         loadBunkerCard();
         
+        // Загружаем голосование
+        await loadVoting();
+        
         // Настраиваем кнопку выхода
         setupExitButton();
         
@@ -308,6 +311,52 @@ async function loadPlayersInfo() {
     } catch (err) {
         console.error('Ошибка загрузки информации о игроках:', err);
         currentPlayerCardEl.innerHTML = '<p class="game-error">Ошибка загрузки информации</p>';
+    }
+}
+
+// Загрузка голосования
+async function loadVoting() {
+    const votingContent = document.getElementById('votingContent');
+    if (!votingContent) return;
+    
+    try {
+        // Получаем список всех игроков в лобби
+        const { data: players, error: playersError } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('lobby_id', parseInt(currentLobbyId));
+        
+        if (playersError) {
+            console.error('Ошибка загрузки игроков для голосования:', playersError);
+            votingContent.innerHTML = '<p class="game-error">Ошибка загрузки игроков</p>';
+            return;
+        }
+        
+        if (!players || players.length === 0) {
+            votingContent.innerHTML = '<p>Нет игроков в лобби</p>';
+            return;
+        }
+        
+        // Создаем список игроков с кнопками голосования
+        const votingHTML = players.map(player => {
+            const playerName = player.name || player.email || 'Неизвестный';
+            return `
+                <div class="voting-item">
+                    <span class="voting-player-name">${playerName}</span>
+                    <button class="voting-btn" disabled>Голосовать</button>
+                </div>
+            `;
+        }).join('');
+        
+        votingContent.innerHTML = `
+            <div class="voting-list">
+                ${votingHTML}
+            </div>
+        `;
+        
+    } catch (err) {
+        console.error('Ошибка загрузки голосования:', err);
+        votingContent.innerHTML = '<p class="game-error">Ошибка загрузки голосования</p>';
     }
 }
 

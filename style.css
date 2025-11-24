@@ -1043,6 +1043,60 @@ body {
     line-height: 1.6;
 }
 
+/* Голосование */
+.voting-list {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.voting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(50, 50, 50, 0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(150, 150, 150, 0.2);
+}
+
+.voting-player-name {
+    color: #d0d0d0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.voting-btn {
+    background: rgba(60, 60, 60, 0.9);
+    border: 2px solid rgba(150, 150, 150, 0.3);
+    border-radius: 8px;
+    padding: 8px 20px;
+    color: #808080;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+}
+
+.voting-btn:not(:disabled) {
+    opacity: 1;
+    cursor: pointer;
+    color: #d0d0d0;
+    border-color: rgba(0, 255, 136, 0.5);
+}
+
+.voting-btn:not(:disabled):hover {
+    background: rgba(80, 80, 80, 0.95);
+    border-color: rgba(0, 255, 136, 0.8);
+    color: #00ff88;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+}
+
 /* Модальное окно лобби */
 .lobby-modal-content {
     max-width: 700px;
