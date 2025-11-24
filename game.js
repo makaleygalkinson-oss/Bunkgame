@@ -216,9 +216,6 @@ async function loadPlayersInfo() {
             }).join('');
             
             playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
-            
-            // Настраиваем переворот для новых карточек
-            setupFlipCards();
         }
         
     } catch (err) {
@@ -229,12 +226,15 @@ async function loadPlayersInfo() {
 
 // Настройка переворота карточек
 function setupFlipCards() {
-    const flipCards = document.querySelectorAll('.flip-card-inner');
-    
-    flipCards.forEach(card => {
-        card.addEventListener('click', () => {
-            card.classList.toggle('flipped');
-        });
+    // Используем делегирование событий для всех карточек
+    document.addEventListener('click', (e) => {
+        const flipCard = e.target.closest('.flip-card');
+        if (flipCard) {
+            const flipCardInner = flipCard.querySelector('.flip-card-inner');
+            if (flipCardInner) {
+                flipCardInner.classList.toggle('flipped');
+            }
+        }
     });
 }
 
