@@ -635,15 +635,18 @@ body {
     position: relative;
 }
 
-.game-header-section {
+.game-header-left {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+}
+
+.game-header-right {
     position: fixed;
     top: 20px;
     right: 20px;
     z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 1rem;
 }
 
 .game-exit-btn {
@@ -751,6 +754,14 @@ body {
     min-width: 300px;
 }
 
+/* Центральная колонка */
+.game-center-column {
+    flex: 1;
+    min-width: 300px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
 /* Правая колонка */
 .game-right-column {
     flex: 0 0 auto;
@@ -813,6 +824,52 @@ body {
 
 .bunker-card-block .game-block-content {
     min-height: 450px;
+}
+
+/* Блок с игроками */
+.players-block {
+    min-height: 400px;
+}
+
+.players-block .game-block-content {
+    min-height: 350px;
+}
+
+/* Карточки игроков */
+.player-card {
+    background: rgba(50, 50, 50, 0.6);
+    border: 1px solid rgba(150, 150, 150, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.player-card:hover {
+    background: rgba(60, 60, 60, 0.8);
+    border-color: rgba(200, 200, 200, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.player-card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #00ff88;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.player-card-info {
+    font-size: 0.9rem;
+    color: #d0d0d0;
+    line-height: 1.6;
+}
+
+.players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 /* Модальное окно лобби */
@@ -1218,16 +1275,26 @@ body {
         max-width: 100%;
     }
     
+    .game-center-column {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+    }
+    
     .game-right-column {
         width: 100%;
         min-width: 100%;
         max-width: 100%;
     }
     
-    .game-header-section {
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 0.8rem;
+    .game-header-left {
+        top: 15px;
+        left: 15px;
+    }
+    
+    .game-header-right {
+        top: 15px;
+        right: 15px;
     }
     
     .game-info {

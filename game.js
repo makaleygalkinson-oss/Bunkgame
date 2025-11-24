@@ -56,6 +56,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Загружаем информацию о лобби
         await loadLobbyInfo();
         
+        // Загружаем информацию о игроках
+        await loadPlayersInfo();
+        
         // Настраиваем кнопку выхода
         setupExitButton();
         
@@ -140,6 +143,70 @@ function setupExitButton() {
         
         await exitFromLobby();
     });
+}
+
+// Загрузка информации о игроках
+async function loadPlayersInfo() {
+    const currentPlayerNameEl = document.getElementById('currentPlayerName');
+    const playersContent = document.getElementById('playersContent');
+    
+    if (!currentPlayerNameEl || !playersContent) return;
+    
+    try {
+        // Получаем информацию о текущем пользователе
+        const userStr = sessionStorage.getItem('currentUser');
+        if (!userStr) return;
+        
+        const currentUser = JSON.parse(userStr);
+        const currentUserName = currentUser.name || currentUser.email || 'Неизвестный';
+        
+        // Отображаем ник текущего пользователя в шапке
+        currentPlayerNameEl.textContent = currentUserName;
+        
+        // Получаем список всех игроков в лобби
+        const { data: players, error: playersError } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('lobby_id', parseInt(currentLobbyId));
+        
+        if (playersError) {
+            console.error('Ошибка загрузки игроков:', playersError);
+            playersContent.innerHTML = '<p class="game-error">Ошибка загрузки игроков</p>';
+            return;
+        }
+        
+        if (!players || players.length === 0) {
+            playersContent.innerHTML = '<p>Нет других игроков в лобби</p>';
+            return;
+        }
+        
+        // Фильтруем игроков, исключая текущего пользователя
+        const otherPlayers = players.filter(p => p.id !== currentUserId);
+        
+        if (otherPlayers.length === 0) {
+            playersContent.innerHTML = '<p>Вы единственный игрок в лобби</p>';
+            return;
+        }
+        
+        // Создаем карточки для остальных игроков
+        const playersHTML = otherPlayers.map(player => {
+            const playerName = player.name || player.email || 'Неизвестный';
+            return `
+                <div class="player-card">
+                    <div class="player-card-name">${playerName}</div>
+                    <div class="player-card-info">
+                        <p>Игрок в лобби</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        playersContent.innerHTML = `<div class="players-list">${playersHTML}</div>`;
+        
+    } catch (err) {
+        console.error('Ошибка загрузки информации о игроках:', err);
+        playersContent.innerHTML = '<p class="game-error">Ошибка загрузки информации</p>';
+    }
 }
 
 // Выход из лобби

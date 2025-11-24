@@ -13,11 +13,14 @@
 </head>
 <body>
     <div class="game-container">
-        <div class="game-header-section">
+        <div class="game-header-left">
+            <button class="game-exit-btn" id="exitLobbyBtn">Выйти из лобби</button>
+        </div>
+        
+        <div class="game-header-right">
             <div class="game-info" id="gameInfo">
                 <p>Загрузка информации о лобби...</p>
             </div>
-            <button class="game-exit-btn" id="exitLobbyBtn">Выйти из лобби</button>
         </div>
         
         <div class="game-content">
@@ -43,6 +46,18 @@
                         </div>
                         <div class="game-block-content" id="bunkerSecretContent">
                             <p>Секретная информация...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Центральная колонка: блок с игроками -->
+                <div class="game-center-column">
+                    <div class="game-block players-block">
+                        <div class="game-block-header">
+                            <h2 class="game-block-title" id="currentPlayerName">Загрузка...</h2>
+                        </div>
+                        <div class="game-block-content" id="playersContent">
+                            <p>Загрузка игроков...</p>
                         </div>
                     </div>
                 </div>
