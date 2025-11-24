@@ -867,6 +867,10 @@ body {
     gap: 1rem;
 }
 
+.players-list-container {
+    margin-top: 1.5rem;
+}
+
 /* Модальное окно лобби */
 .lobby-modal-content {
     max-width: 700px;

@@ -148,9 +148,10 @@ function setupExitButton() {
 // Загрузка информации о игроках
 async function loadPlayersInfo() {
     const currentPlayerNameEl = document.getElementById('currentPlayerName');
+    const currentPlayerCardEl = document.getElementById('currentPlayerCard');
     const playersContent = document.getElementById('playersContent');
     
-    if (!currentPlayerNameEl || !playersContent) return;
+    if (!currentPlayerNameEl || !currentPlayerCardEl || !playersContent) return;
     
     try {
         // Получаем информацию о текущем пользователе
@@ -171,12 +172,12 @@ async function loadPlayersInfo() {
         
         if (playersError) {
             console.error('Ошибка загрузки игроков:', playersError);
-            playersContent.innerHTML = '<p class="game-error">Ошибка загрузки игроков</p>';
+            currentPlayerCardEl.innerHTML = '<p class="game-error">Ошибка загрузки игроков</p>';
             return;
         }
         
         if (!players || players.length === 0) {
-            playersContent.innerHTML = '<p>Нет игроков в лобби</p>';
+            currentPlayerCardEl.innerHTML = '<p>Нет игроков в лобби</p>';
             return;
         }
         
@@ -185,24 +186,27 @@ async function loadPlayersInfo() {
         const otherPlayers = players.filter(p => p.id !== currentUserId);
         
         // Карточка текущего игрока (просто текст, без внутренних блоков)
-        const currentPlayerCard = currentPlayer 
-            ? `<div class="player-card">${currentUserName}</div>`
-            : '';
+        if (currentPlayer) {
+            currentPlayerCardEl.innerHTML = `<div class="player-card">${currentUserName}</div>`;
+        } else {
+            currentPlayerCardEl.innerHTML = '<p>Ошибка: текущий игрок не найден</p>';
+        }
         
-        // Карточки других игроков
-        const otherPlayersHTML = otherPlayers.map(player => {
-            const playerName = player.name || player.email || 'Неизвестный';
-            return `<div class="player-card">${playerName}</div>`;
-        }).join('');
-        
-        playersContent.innerHTML = `
-            ${currentPlayerCard}
-            <div class="players-list">${otherPlayersHTML}</div>
-        `;
+        // Карточки других игроков (ВНЕ карточки текущего игрока)
+        if (otherPlayers.length === 0) {
+            playersContent.innerHTML = '';
+        } else {
+            const otherPlayersHTML = otherPlayers.map(player => {
+                const playerName = player.name || player.email || 'Неизвестный';
+                return `<div class="player-card">${playerName}</div>`;
+            }).join('');
+            
+            playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
+        }
         
     } catch (err) {
         console.error('Ошибка загрузки информации о игроках:', err);
-        playersContent.innerHTML = '<p class="game-error">Ошибка загрузки информации</p>';
+        currentPlayerCardEl.innerHTML = '<p class="game-error">Ошибка загрузки информации</p>';
     }
 }
 
