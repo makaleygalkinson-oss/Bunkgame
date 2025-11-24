@@ -678,7 +678,7 @@ body {
 }
 
 .game-content {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding-top: 100px;
     text-align: center;
@@ -725,6 +725,88 @@ body {
     text-align: center;
     padding: 2rem;
     font-size: 1.1rem;
+}
+
+/* Layout для блоков игры */
+.game-layout {
+    display: flex;
+    gap: 2rem;
+    margin: 3rem 0;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+/* Левая колонка */
+.game-left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    flex: 0 0 350px;
+    min-width: 300px;
+}
+
+/* Правая колонка */
+.game-right-column {
+    flex: 1;
+    min-width: 400px;
+    max-width: 600px;
+}
+
+/* Блоки игры */
+.game-block {
+    background: rgba(40, 40, 40, 0.8);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(150, 150, 150, 0.3);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.game-block:hover {
+    border-color: rgba(200, 200, 200, 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.game-block-header {
+    background: rgba(30, 30, 30, 0.9);
+    border-bottom: 2px solid rgba(150, 150, 150, 0.3);
+    padding: 1rem 1.5rem;
+    text-align: center;
+}
+
+.game-block-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #d0d0d0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0;
+}
+
+.game-block-content {
+    padding: 1.5rem;
+    color: #d0d0d0;
+    line-height: 1.6;
+    min-height: 150px;
+}
+
+/* Блок голосования */
+.voting-block {
+    min-height: 200px;
+}
+
+/* Блок секретной информации бункера */
+.bunker-secret-block {
+    min-height: 250px;
+}
+
+/* Блок карточки бункера */
+.bunker-card-block {
+    min-height: 500px;
+}
+
+.bunker-card-block .game-block-content {
+    min-height: 450px;
 }
 
 /* Модальное окно лобби */
@@ -1115,5 +1197,40 @@ body {
     
     .role-option-text {
         font-size: 0.9rem;
+    }
+    
+    .game-layout {
+        flex-direction: column;
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+    
+    .game-left-column {
+        flex: 1;
+        min-width: 100%;
+        max-width: 100%;
+    }
+    
+    .game-right-column {
+        flex: 1;
+        min-width: 100%;
+        max-width: 100%;
+    }
+    
+    .game-block-title {
+        font-size: 1rem;
+    }
+    
+    .game-block-content {
+        padding: 1rem;
+        min-height: 120px;
+    }
+    
+    .bunker-card-block {
+        min-height: 400px;
+    }
+    
+    .bunker-card-block .game-block-content {
+        min-height: 350px;
     }
 }
