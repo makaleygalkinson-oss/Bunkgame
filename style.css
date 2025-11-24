@@ -872,6 +872,10 @@ body {
     margin-top: 1.5rem;
 }
 
+.player-card-block {
+    margin-bottom: 1.5rem;
+}
+
 /* Модальное окно лобби */
 .lobby-modal-content {
     max-width: 700px;

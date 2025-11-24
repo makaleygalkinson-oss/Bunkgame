@@ -194,7 +194,15 @@ async function loadPlayersInfo() {
         } else {
             const otherPlayersHTML = otherPlayers.map(player => {
                 const playerName = player.name || player.email || 'Неизвестный';
-                return `<div class="player-card">${playerName}</div>`;
+                return `
+                    <div class="game-block player-card-block">
+                        <div class="game-block-header">
+                            <h2 class="game-block-title">${playerName}</h2>
+                        </div>
+                        <div class="game-block-content">
+                        </div>
+                    </div>
+                `;
             }).join('');
             
             playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
