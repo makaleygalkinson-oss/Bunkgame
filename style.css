@@ -852,12 +852,15 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-.player-card-name {
+.player-card {
     font-size: 1rem;
     font-weight: 700;
     color: #00ff88;
-    margin-bottom: 0.5rem;
     text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
 }
 
 

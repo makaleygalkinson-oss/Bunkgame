@@ -180,17 +180,25 @@ async function loadPlayersInfo() {
             return;
         }
         
-        // Создаем карточки для всех игроков, включая текущего
-        const playersHTML = players.map(player => {
+        // Находим текущего игрока и остальных
+        const currentPlayer = players.find(p => p.id === currentUserId);
+        const otherPlayers = players.filter(p => p.id !== currentUserId);
+        
+        // Карточка текущего игрока (просто текст, без внутренних блоков)
+        const currentPlayerCard = currentPlayer 
+            ? `<div class="player-card">${currentUserName}</div>`
+            : '';
+        
+        // Карточки других игроков
+        const otherPlayersHTML = otherPlayers.map(player => {
             const playerName = player.name || player.email || 'Неизвестный';
-            return `
-                <div class="player-card">
-                    <div class="player-card-name">${playerName}</div>
-                </div>
-            `;
+            return `<div class="player-card">${playerName}</div>`;
         }).join('');
         
-        playersContent.innerHTML = `<div class="players-list">${playersHTML}</div>`;
+        playersContent.innerHTML = `
+            ${currentPlayerCard}
+            <div class="players-list">${otherPlayersHTML}</div>
+        `;
         
     } catch (err) {
         console.error('Ошибка загрузки информации о игроках:', err);
