@@ -326,15 +326,15 @@ async function loadPlayersInfo() {
                                     <h2 class="game-block-title">${playerName}</h2>
                                 </div>
                                 <div class="game-block-content player-card-info">
-                                    <div class="player-info-item" data-item="genderAge" data-player-id="${player.id}"><strong>Пол и возраст:</strong> <span class="blurred-text">${playerData.genderAge}</span></div>
-                                    <div class="player-info-item" data-item="profession" data-player-id="${player.id}"><strong>Профессия:</strong> <span class="blurred-text">${playerData.profession}</span></div>
-                                    <div class="player-info-item" data-item="health" data-player-id="${player.id}"><strong>Состояние здоровья:</strong> <span class="blurred-text">${playerData.health}</span></div>
-                                    <div class="player-info-item" data-item="hobby" data-player-id="${player.id}"><strong>Хобби:</strong> <span class="blurred-text">${playerData.hobby}</span></div>
-                                    <div class="player-info-item" data-item="phobia" data-player-id="${player.id}"><strong>Фобия:</strong> <span class="blurred-text">${playerData.phobia}</span></div>
-                                    <div class="player-info-item" data-item="fact1" data-player-id="${player.id}"><strong>Факт №1:</strong> <span class="blurred-text">${playerData.fact1}</span></div>
-                                    <div class="player-info-item" data-item="fact2" data-player-id="${player.id}"><strong>Факт №2:</strong> <span class="blurred-text">${playerData.fact2}</span></div>
-                                    <div class="player-info-item" data-item="action1" data-player-id="${player.id}"><strong>Карточка действия №1:</strong> <span class="blurred-text">${playerData.action1}</span></div>
-                                    <div class="player-info-item" data-item="action2" data-player-id="${player.id}"><strong>Карточка действия №2:</strong> <span class="blurred-text">${playerData.action2}</span></div>
+                                    <div class="player-info-item" data-item="genderAge" data-owner-id="${player.id}"><strong>Пол и возраст:</strong> <span class="blurred-text">${playerData.genderAge}</span></div>
+                                    <div class="player-info-item" data-item="profession" data-owner-id="${player.id}"><strong>Профессия:</strong> <span class="blurred-text">${playerData.profession}</span></div>
+                                    <div class="player-info-item" data-item="health" data-owner-id="${player.id}"><strong>Состояние здоровья:</strong> <span class="blurred-text">${playerData.health}</span></div>
+                                    <div class="player-info-item" data-item="hobby" data-owner-id="${player.id}"><strong>Хобби:</strong> <span class="blurred-text">${playerData.hobby}</span></div>
+                                    <div class="player-info-item" data-item="phobia" data-owner-id="${player.id}"><strong>Фобия:</strong> <span class="blurred-text">${playerData.phobia}</span></div>
+                                    <div class="player-info-item" data-item="fact1" data-owner-id="${player.id}"><strong>Факт №1:</strong> <span class="blurred-text">${playerData.fact1}</span></div>
+                                    <div class="player-info-item" data-item="fact2" data-owner-id="${player.id}"><strong>Факт №2:</strong> <span class="blurred-text">${playerData.fact2}</span></div>
+                                    <div class="player-info-item" data-item="action1" data-owner-id="${player.id}"><strong>Карточка действия №1:</strong> <span class="blurred-text">${playerData.action1}</span></div>
+                                    <div class="player-info-item" data-item="action2" data-owner-id="${player.id}"><strong>Карточка действия №2:</strong> <span class="blurred-text">${playerData.action2}</span></div>
                                 </div>
                             </div>
                             <div class="flip-card-back">
@@ -414,20 +414,24 @@ function setupRevealIcons() {
         const itemType = icon.getAttribute('data-item');
         const playerId = icon.getAttribute('data-player-id');
         
-        if (!itemType || !playerId) return;
+        if (!itemType || !playerId) {
+            console.log('Отсутствуют data-item или data-player-id');
+            return;
+        }
         
         // Проверяем, не использован ли уже этот значок
         if (icon.classList.contains('used')) {
+            console.log('Значок уже использован');
             return; // Уже использован
         }
         
         console.log('Разблокировка параметра:', itemType, 'для игрока:', playerId);
         console.log('Типы данных:', typeof itemType, typeof playerId);
         
-        // Сохраняем разблокировку в Supabase
+        // Сохраняем разблокировку в Supabase (playerId - это ID текущего игрока, чей параметр разблокируется)
         await saveRevealState(playerId, itemType);
         
-        // Убираем blur локально (с небольшой задержкой для гарантии)
+        // Убираем blur локально (playerId - это ID текущего игрока, нужно найти его карточки у других игроков)
         setTimeout(() => {
             revealItem(playerId, itemType);
         }, 100);
@@ -442,8 +446,19 @@ function setupRevealIcons() {
 // Сохранение состояния разблокировки в Supabase
 async function saveRevealState(playerId, itemType) {
     try {
-        if (!currentLobbyId) return;
+        if (!currentLobbyId) {
+            console.log('Нет currentLobbyId');
+            return;
+        }
         
+        // Пока сохраняем только в sessionStorage, так как в БД нет колонки revealed_items
+        // В будущем можно добавить отдельную таблицу для разблокированных элементов
+        const key = `revealed_${playerId}_${itemType}`;
+        sessionStorage.setItem(key, 'true');
+        console.log('Разблокировка сохранена в sessionStorage:', key);
+        
+        // TODO: Когда будет добавлена колонка revealed_items в таблицу lobbies, раскомментировать:
+        /*
         // Получаем текущее состояние разблокировки из лобби
         const { data: lobby, error: fetchError } = await supabase
             .from('lobbies')
@@ -476,6 +491,7 @@ async function saveRevealState(playerId, itemType) {
         } else {
             console.log('Разблокировка сохранена:', playerId, itemType);
         }
+        */
     } catch (err) {
         console.error('Ошибка сохранения состояния разблокировки:', err);
     }
@@ -489,17 +505,19 @@ function revealItem(playerId, itemType) {
     const playerIdStr = String(playerId);
     
     // Находим все элементы с данным типом для данного игрока
-    // Ищем во всех карточках, включая перевёрнутые
+    // playerId - это ID текущего игрока, который нажал на значок
+    // Нужно найти карточки других игроков, где data-owner-id равен ID текущего игрока
     const allItems = document.querySelectorAll(`.player-info-item[data-item="${itemType}"]`);
     console.log('Всего элементов с data-item:', allItems.length);
     
     let foundCount = 0;
     allItems.forEach((item, index) => {
-        const itemPlayerId = item.getAttribute('data-player-id');
-        console.log(`Элемент ${index + 1}: playerId="${itemPlayerId}" (ожидаем "${playerIdStr}")`);
+        // Используем data-owner-id вместо data-player-id
+        const itemOwnerId = item.getAttribute('data-owner-id');
+        console.log(`Элемент ${index + 1}: ownerId="${itemOwnerId}" (ожидаем "${playerIdStr}")`);
         
-        // Сравниваем playerId (может быть UUID или число)
-        if (String(itemPlayerId) === playerIdStr) {
+        // Сравниваем ownerId (ID владельца карточки) с playerId (ID текущего игрока)
+        if (String(itemOwnerId) === playerIdStr) {
             foundCount++;
             console.log(`✓ Найден элемент ${index + 1} для игрока ${playerIdStr}`);
             
@@ -519,6 +537,15 @@ function revealItem(playerId, itemType) {
     
     if (foundCount === 0) {
         console.error('⚠ Элементы не найдены! Проверьте playerId и itemType');
+        console.log('Попытка найти элементы другим способом...');
+        
+        // Альтернативный поиск: ищем все элементы с нужным itemType
+        const altItems = document.querySelectorAll(`[data-item="${itemType}"]`);
+        console.log('Альтернативный поиск: найдено элементов:', altItems.length);
+        altItems.forEach((item, index) => {
+            const altOwnerId = item.getAttribute('data-owner-id');
+            console.log(`Альтернативный элемент ${index + 1}: ownerId="${altOwnerId}"`);
+        });
     }
 }
 
