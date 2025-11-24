@@ -1047,9 +1047,6 @@ body {
     opacity: 0.8;
 }
 
-.player-info-item.blurred .reveal-icon {
-    filter: none !important;
-}
 
 .bunker-card-info {
     padding: 1.5rem;
