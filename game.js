@@ -185,12 +185,8 @@ async function loadPlayersInfo() {
         const currentPlayer = players.find(p => p.id === currentUserId);
         const otherPlayers = players.filter(p => p.id !== currentUserId);
         
-        // Карточка текущего игрока (просто текст, без внутренних блоков)
-        if (currentPlayer) {
-            currentPlayerCardEl.innerHTML = `<div class="player-card">${currentUserName}</div>`;
-        } else {
-            currentPlayerCardEl.innerHTML = '<p>Ошибка: текущий игрок не найден</p>';
-        }
+        // Убираем карточку текущего игрока из блока (оставляем только шапку)
+        currentPlayerCardEl.innerHTML = '';
         
         // Карточки других игроков (ВНЕ карточки текущего игрока)
         if (otherPlayers.length === 0) {
