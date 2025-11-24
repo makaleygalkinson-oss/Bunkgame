@@ -820,18 +820,21 @@ body {
 .flip-card-back {
     transform: rotateY(180deg);
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
+    justify-content: stretch;
     background: rgba(30, 30, 30, 0.95);
     border-radius: 16px;
     border: 2px solid rgba(150, 150, 150, 0.3);
     min-height: inherit;
+    padding: 0;
+    overflow: hidden;
 }
 
 .bunker-logo {
-    max-width: 90%;
-    max-height: 90%;
-    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 /* Блоки игры */
