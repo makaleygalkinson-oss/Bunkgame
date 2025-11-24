@@ -1015,10 +1015,11 @@ body {
     transition: filter 0.3s ease;
 }
 
-.player-info-item.blurred {
+.blurred-text {
     filter: blur(5px);
     user-select: none;
     pointer-events: none;
+    transition: filter 0.3s ease;
 }
 
 .player-info-item strong {

@@ -317,15 +317,15 @@ async function loadPlayersInfo() {
                                     <h2 class="game-block-title">${playerName}</h2>
                                 </div>
                                 <div class="game-block-content player-card-info">
-                                    <div class="player-info-item blurred" data-item="genderAge" data-player-id="${player.id}"><strong>Пол и возраст:</strong> ${playerData.genderAge}</div>
-                                    <div class="player-info-item blurred" data-item="profession" data-player-id="${player.id}"><strong>Профессия:</strong> ${playerData.profession}</div>
-                                    <div class="player-info-item blurred" data-item="health" data-player-id="${player.id}"><strong>Состояние здоровья:</strong> ${playerData.health}</div>
-                                    <div class="player-info-item blurred" data-item="hobby" data-player-id="${player.id}"><strong>Хобби:</strong> ${playerData.hobby}</div>
-                                    <div class="player-info-item blurred" data-item="phobia" data-player-id="${player.id}"><strong>Фобия:</strong> ${playerData.phobia}</div>
-                                    <div class="player-info-item blurred" data-item="fact1" data-player-id="${player.id}"><strong>Факт №1:</strong> ${playerData.fact1}</div>
-                                    <div class="player-info-item blurred" data-item="fact2" data-player-id="${player.id}"><strong>Факт №2:</strong> ${playerData.fact2}</div>
-                                    <div class="player-info-item blurred" data-item="action1" data-player-id="${player.id}"><strong>Карточка действия №1:</strong> ${playerData.action1}</div>
-                                    <div class="player-info-item blurred" data-item="action2" data-player-id="${player.id}"><strong>Карточка действия №2:</strong> ${playerData.action2}</div>
+                                    <div class="player-info-item" data-item="genderAge" data-player-id="${player.id}"><span class="blurred-text"><strong>Пол и возраст:</strong> ${playerData.genderAge}</span></div>
+                                    <div class="player-info-item" data-item="profession" data-player-id="${player.id}"><span class="blurred-text"><strong>Профессия:</strong> ${playerData.profession}</span></div>
+                                    <div class="player-info-item" data-item="health" data-player-id="${player.id}"><span class="blurred-text"><strong>Состояние здоровья:</strong> ${playerData.health}</span></div>
+                                    <div class="player-info-item" data-item="hobby" data-player-id="${player.id}"><span class="blurred-text"><strong>Хобби:</strong> ${playerData.hobby}</span></div>
+                                    <div class="player-info-item" data-item="phobia" data-player-id="${player.id}"><span class="blurred-text"><strong>Фобия:</strong> ${playerData.phobia}</span></div>
+                                    <div class="player-info-item" data-item="fact1" data-player-id="${player.id}"><span class="blurred-text"><strong>Факт №1:</strong> ${playerData.fact1}</span></div>
+                                    <div class="player-info-item" data-item="fact2" data-player-id="${player.id}"><span class="blurred-text"><strong>Факт №2:</strong> ${playerData.fact2}</span></div>
+                                    <div class="player-info-item" data-item="action1" data-player-id="${player.id}"><span class="blurred-text"><strong>Карточка действия №1:</strong> ${playerData.action1}</span></div>
+                                    <div class="player-info-item" data-item="action2" data-player-id="${player.id}"><span class="blurred-text"><strong>Карточка действия №2:</strong> ${playerData.action2}</span></div>
                                 </div>
                             </div>
                             <div class="flip-card-back">
@@ -478,23 +478,27 @@ async function saveRevealState(playerId, itemType) {
 function revealItem(playerId, itemType) {
     console.log('Разблокировка пункта:', itemType, 'для игрока:', playerId);
     
-    // Убираем blur с соответствующего пункта в карточке этого игрока среди других игроков
-    const selector = `.player-card-info .player-info-item[data-item="${itemType}"][data-player-id="${playerId}"]`;
+    // Ищем все элементы с нужными атрибутами (включая те, что внутри flip-card)
+    const selector = `[data-item="${itemType}"][data-player-id="${playerId}"] .blurred-text`;
     console.log('Селектор:', selector);
     
-    const otherItems = document.querySelectorAll(selector);
-    console.log('Найдено элементов:', otherItems.length);
+    const blurredTexts = document.querySelectorAll(selector);
+    console.log('Найдено элементов с blur:', blurredTexts.length);
     
-    otherItems.forEach(item => {
-        console.log('Убираем blur с элемента:', item);
-        item.classList.remove('blurred');
+    blurredTexts.forEach(text => {
+        console.log('Убираем blur с текста:', text);
+        text.classList.remove('blurred-text');
     });
     
-    // Также проверяем все элементы с этим itemType и playerId
-    const allItems = document.querySelectorAll(`[data-item="${itemType}"][data-player-id="${playerId}"]`);
-    console.log('Всего элементов с такими атрибутами:', allItems.length);
-    allItems.forEach(item => {
-        item.classList.remove('blurred');
+    // Также ищем через родительский элемент
+    const items = document.querySelectorAll(`[data-item="${itemType}"][data-player-id="${playerId}"]`);
+    console.log('Всего элементов с такими атрибутами:', items.length);
+    items.forEach(item => {
+        const blurredText = item.querySelector('.blurred-text');
+        if (blurredText) {
+            console.log('Убираем blur через родителя:', blurredText);
+            blurredText.classList.remove('blurred-text');
+        }
     });
 }
 
@@ -539,15 +543,20 @@ function restoreRevealStates(playerId) {
     itemTypes.forEach(itemType => {
         const revealKey = `revealed_${playerId}_${itemType}`;
         if (sessionStorage.getItem(revealKey) === 'true') {
-            revealItem(playerId, itemType);
+            // Небольшая задержка, чтобы элементы успели создаться
+            setTimeout(() => {
+                revealItem(playerId, itemType);
+            }, 100);
             
             // Помечаем иконку как использованную
-            const icon = document.querySelector(`.reveal-icon[data-reveal="${itemType}"]`);
-            if (icon) {
-                icon.style.opacity = '0.5';
-                icon.style.cursor = 'not-allowed';
-                icon.classList.add('used');
-            }
+            setTimeout(() => {
+                const icon = document.querySelector(`.reveal-icon[data-reveal="${itemType}"]`);
+                if (icon) {
+                    icon.style.opacity = '0.5';
+                    icon.style.cursor = 'not-allowed';
+                    icon.classList.add('used');
+                }
+            }, 100);
         }
     });
 }
