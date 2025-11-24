@@ -970,13 +970,13 @@ body {
 }
 
 .player-card-block {
-    min-height: 400px;
+    min-height: 900px;
     margin: 0;
     width: 100%;
 }
 
 .player-card-block .game-block-content {
-    min-height: 350px;
+    min-height: 850px;
 }
 
 /* Модальное окно лобби */
