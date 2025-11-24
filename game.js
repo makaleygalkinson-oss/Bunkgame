@@ -398,30 +398,54 @@ async function loadVoting() {
     }
 }
 
+// Глобальная переменная для хранения ID текущего игрока для разблокировки
+let revealCurrentPlayerId = null;
+
 // Настройка значков разблокировки
 function setupRevealIcons(currentPlayerId) {
-    // Используем делегирование событий для значков
-    const currentPlayerCard = document.getElementById('currentPlayerCard');
-    if (!currentPlayerCard) return;
+    console.log('Настройка значков разблокировки для игрока:', currentPlayerId);
+    revealCurrentPlayerId = currentPlayerId;
     
-    // Удаляем старые обработчики, если они есть
-    const newHandler = async (e) => {
+    // Удаляем предыдущий обработчик, если он был
+    if (window._revealHandler) {
+        document.removeEventListener('click', window._revealHandler);
+    }
+    
+    // Создаем новый обработчик
+    window._revealHandler = async function revealHandler(e) {
         const icon = e.target.closest('.reveal-icon');
         if (!icon) return;
+        
+        console.log('Клик по иконке разблокировки!', icon);
         
         e.stopPropagation(); // Предотвращаем переворот карточки
         const itemType = icon.getAttribute('data-reveal');
         
+        if (!itemType) {
+            console.log('Нет data-reveal атрибута');
+            return;
+        }
+        
+        console.log('Тип пункта:', itemType, 'ID игрока:', revealCurrentPlayerId);
+        
         // Проверяем, не использован ли уже этот значок
         if (icon.style.opacity === '0.5' || icon.classList.contains('used')) {
+            console.log('Значок уже использован');
             return; // Уже использован
         }
         
-        // Сохраняем разблокировку в БД
-        await saveRevealState(currentPlayerId, itemType);
+        if (!revealCurrentPlayerId) {
+            console.log('Нет ID текущего игрока');
+            return;
+        }
+        
+        console.log('Разблокируем пункт:', itemType, 'для игрока:', revealCurrentPlayerId);
+        
+        // Сохраняем разблокировку
+        await saveRevealState(revealCurrentPlayerId, itemType);
         
         // Убираем blur локально
-        revealItem(currentPlayerId, itemType);
+        revealItem(revealCurrentPlayerId, itemType);
         
         // Делаем иконку неактивной после использования
         icon.style.opacity = '0.5';
@@ -429,10 +453,9 @@ function setupRevealIcons(currentPlayerId) {
         icon.classList.add('used');
     };
     
-    // Удаляем предыдущий обработчик, если он был
-    currentPlayerCard.removeEventListener('click', currentPlayerCard._revealHandler);
-    currentPlayerCard._revealHandler = newHandler;
-    currentPlayerCard.addEventListener('click', newHandler);
+    // Добавляем обработчик на document
+    document.addEventListener('click', window._revealHandler);
+    console.log('Обработчик добавлен на document');
 }
 
 // Сохранение состояния разблокировки в БД
