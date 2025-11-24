@@ -814,7 +814,14 @@ body {
 
 /* Блок секретной информации бункера */
 .bunker-secret-block {
-    min-height: 250px;
+    min-height: 500px;
+    margin-left: -250px;
+    width: calc(100% + 250px);
+    margin-top: 1.5rem;
+}
+
+.bunker-secret-block .game-block-content {
+    min-height: 450px;
 }
 
 /* Блок карточки бункера */
