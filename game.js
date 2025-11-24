@@ -198,7 +198,7 @@ async function loadPlayersInfo() {
             const otherPlayersHTML = otherPlayers.map(player => {
                 const playerName = player.name || player.email || 'Неизвестный';
                 return `
-                    <div class="flip-card" style="min-height: 900px; margin-bottom: 1.5rem;">
+                    <div class="flip-card" style="min-height: 900px; margin-bottom: 1.5rem; width: 100%;">
                         <div class="flip-card-inner flipped">
                             <div class="flip-card-front game-block player-card-block">
                                 <div class="game-block-header">

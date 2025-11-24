@@ -811,6 +811,8 @@ body {
     min-height: inherit;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
 }
@@ -946,8 +948,8 @@ body {
 }
 
 .player-card-block {
-    margin-bottom: 1.5rem;
     min-height: 900px;
+    margin: 0;
 }
 
 .player-card-block .game-block-content {
