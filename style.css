@@ -631,8 +631,9 @@ body {
 .game-container {
     min-height: 100vh;
     background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1f1f1f 100%);
-    padding: 2rem;
+    padding: 0;
     position: relative;
+    margin: 0;
 }
 
 /* Шапка страницы игры */
@@ -648,6 +649,9 @@ body {
     top: 0;
     z-index: 1000;
     width: 100%;
+    margin: 0;
+    left: 0;
+    right: 0;
 }
 
 .game-exit-btn {
@@ -687,8 +691,16 @@ body {
 
 .game-content {
     width: 100%;
-    padding-top: 2rem;
+    padding: 2rem;
     text-align: center;
+}
+
+.game-info-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    margin-left: -250px;
+    width: calc(100% + 250px);
 }
 
 .game-info {
@@ -699,7 +711,6 @@ body {
     padding: 1rem 1.5rem;
     max-width: 300px;
     text-align: right;
-    margin: 2rem auto;
 }
 
 .game-title {
@@ -712,13 +723,6 @@ body {
     text-shadow: 0 0 40px rgba(0, 255, 136, 0.6);
 }
 
-.game-exit-btn-container {
-    display: flex;
-    justify-content: center;
-    margin-top: 1.5rem;
-    margin-left: -250px;
-    width: calc(100% + 250px);
-}
 
 .game-lobby-info {
     text-align: right;
@@ -1321,15 +1325,14 @@ body {
         padding: 0.8rem 1rem;
     }
     
+    .game-info-container {
+        margin-left: 0;
+        width: 100%;
+    }
+    
     .game-info {
         max-width: 250px;
         padding: 0.8rem 1rem;
-        margin: 1.5rem auto;
-    }
-    
-    .game-exit-btn-container {
-        margin-left: 0;
-        width: 100%;
     }
     
     .game-lobby-info p {
