@@ -148,6 +148,30 @@ function setupExitButton() {
     });
 }
 
+// Генерация стабильных рандомных значений для игрока на основе его ID
+function generatePlayerCardData(playerId) {
+    // Используем ID игрока как seed для генерации стабильных значений
+    const seed = playerId.toString().split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    
+    // Простая функция для генерации псевдослучайных чисел на основе seed
+    function seededRandom(seed, index) {
+        const x = Math.sin((seed + index) * 12.9898) * 43758.5453;
+        return x - Math.floor(x);
+    }
+    
+    return {
+        genderAge: Math.floor(seededRandom(seed, 1) * 100) + 1,
+        profession: Math.floor(seededRandom(seed, 2) * 100) + 1,
+        health: Math.floor(seededRandom(seed, 3) * 100) + 1,
+        hobby: Math.floor(seededRandom(seed, 4) * 100) + 1,
+        phobia: Math.floor(seededRandom(seed, 5) * 100) + 1,
+        fact1: Math.floor(seededRandom(seed, 6) * 100) + 1,
+        fact2: Math.floor(seededRandom(seed, 7) * 100) + 1,
+        action1: Math.floor(seededRandom(seed, 8) * 100) + 1,
+        action2: Math.floor(seededRandom(seed, 9) * 100) + 1
+    };
+}
+
 // Загрузка информации о игроках
 async function loadPlayersInfo() {
     const currentPlayerNameEl = document.getElementById('currentPlayerName');
@@ -188,8 +212,25 @@ async function loadPlayersInfo() {
         const currentPlayer = players.find(p => p.id === currentUserId);
         const otherPlayers = players.filter(p => p.id !== currentUserId);
         
-        // Убираем карточку текущего игрока из блока (оставляем только шапку)
-        currentPlayerCardEl.innerHTML = '';
+        // Генерируем данные для карточки текущего игрока
+        if (currentPlayer) {
+            const currentPlayerData = generatePlayerCardData(currentPlayer.id);
+            currentPlayerCardEl.innerHTML = `
+                <div class="player-card-info">
+                    <div class="player-info-item"><strong>Пол и возраст:</strong> ${currentPlayerData.genderAge}</div>
+                    <div class="player-info-item"><strong>Профессия:</strong> ${currentPlayerData.profession}</div>
+                    <div class="player-info-item"><strong>Состояние здоровья:</strong> ${currentPlayerData.health}</div>
+                    <div class="player-info-item"><strong>Хобби:</strong> ${currentPlayerData.hobby}</div>
+                    <div class="player-info-item"><strong>Фобия:</strong> ${currentPlayerData.phobia}</div>
+                    <div class="player-info-item"><strong>Факт №1:</strong> ${currentPlayerData.fact1}</div>
+                    <div class="player-info-item"><strong>Факт №2:</strong> ${currentPlayerData.fact2}</div>
+                    <div class="player-info-item"><strong>Карточка действия №1:</strong> ${currentPlayerData.action1}</div>
+                    <div class="player-info-item"><strong>Карточка действия №2:</strong> ${currentPlayerData.action2}</div>
+                </div>
+            `;
+        } else {
+            currentPlayerCardEl.innerHTML = '';
+        }
         
         // Карточки других игроков (ВНЕ карточки текущего игрока)
         if (otherPlayers.length === 0) {
@@ -198,16 +239,8 @@ async function loadPlayersInfo() {
             const otherPlayersHTML = otherPlayers.map(player => {
                 const playerName = player.name || player.email || 'Неизвестный';
                 
-                // Генерируем рандомные значения для карточки игрока
-                const genderAge = Math.floor(Math.random() * 100) + 1;
-                const profession = Math.floor(Math.random() * 100) + 1;
-                const health = Math.floor(Math.random() * 100) + 1;
-                const hobby = Math.floor(Math.random() * 100) + 1;
-                const phobia = Math.floor(Math.random() * 100) + 1;
-                const fact1 = Math.floor(Math.random() * 100) + 1;
-                const fact2 = Math.floor(Math.random() * 100) + 1;
-                const action1 = Math.floor(Math.random() * 100) + 1;
-                const action2 = Math.floor(Math.random() * 100) + 1;
+                // Генерируем стабильные значения для карточки игрока на основе его ID
+                const playerData = generatePlayerCardData(player.id);
                 
                 return `
                     <div class="flip-card" style="min-height: 900px; width: 468px; flex-shrink: 0;">
@@ -217,15 +250,15 @@ async function loadPlayersInfo() {
                                     <h2 class="game-block-title">${playerName}</h2>
                                 </div>
                                 <div class="game-block-content player-card-info">
-                                    <div class="player-info-item"><strong>Пол и возраст:</strong> ${genderAge}</div>
-                                    <div class="player-info-item"><strong>Профессия:</strong> ${profession}</div>
-                                    <div class="player-info-item"><strong>Состояние здоровья:</strong> ${health}</div>
-                                    <div class="player-info-item"><strong>Хобби:</strong> ${hobby}</div>
-                                    <div class="player-info-item"><strong>Фобия:</strong> ${phobia}</div>
-                                    <div class="player-info-item"><strong>Факт №1:</strong> ${fact1}</div>
-                                    <div class="player-info-item"><strong>Факт №2:</strong> ${fact2}</div>
-                                    <div class="player-info-item"><strong>Карточка действия №1:</strong> ${action1}</div>
-                                    <div class="player-info-item"><strong>Карточка действия №2:</strong> ${action2}</div>
+                                    <div class="player-info-item"><strong>Пол и возраст:</strong> ${playerData.genderAge}</div>
+                                    <div class="player-info-item"><strong>Профессия:</strong> ${playerData.profession}</div>
+                                    <div class="player-info-item"><strong>Состояние здоровья:</strong> ${playerData.health}</div>
+                                    <div class="player-info-item"><strong>Хобби:</strong> ${playerData.hobby}</div>
+                                    <div class="player-info-item"><strong>Фобия:</strong> ${playerData.phobia}</div>
+                                    <div class="player-info-item"><strong>Факт №1:</strong> ${playerData.fact1}</div>
+                                    <div class="player-info-item"><strong>Факт №2:</strong> ${playerData.fact2}</div>
+                                    <div class="player-info-item"><strong>Карточка действия №1:</strong> ${playerData.action1}</div>
+                                    <div class="player-info-item"><strong>Карточка действия №2:</strong> ${playerData.action2}</div>
                                 </div>
                             </div>
                             <div class="flip-card-back">
