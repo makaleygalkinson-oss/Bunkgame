@@ -197,14 +197,35 @@ async function loadPlayersInfo() {
         } else {
             const otherPlayersHTML = otherPlayers.map(player => {
                 const playerName = player.name || player.email || 'Неизвестный';
+                
+                // Генерируем рандомные значения для карточки игрока
+                const genderAge = Math.floor(Math.random() * 100) + 1;
+                const profession = Math.floor(Math.random() * 100) + 1;
+                const health = Math.floor(Math.random() * 100) + 1;
+                const hobby = Math.floor(Math.random() * 100) + 1;
+                const phobia = Math.floor(Math.random() * 100) + 1;
+                const fact1 = Math.floor(Math.random() * 100) + 1;
+                const fact2 = Math.floor(Math.random() * 100) + 1;
+                const action1 = Math.floor(Math.random() * 100) + 1;
+                const action2 = Math.floor(Math.random() * 100) + 1;
+                
                 return `
-                    <div class="flip-card" style="min-height: 900px; width: 300px; flex-shrink: 0;">
+                    <div class="flip-card" style="min-height: 900px; width: 468px; flex-shrink: 0;">
                         <div class="flip-card-inner flipped">
                             <div class="flip-card-front game-block player-card-block">
                                 <div class="game-block-header">
                                     <h2 class="game-block-title">${playerName}</h2>
                                 </div>
-                                <div class="game-block-content">
+                                <div class="game-block-content player-card-info">
+                                    <div class="player-info-item"><strong>Пол и возраст:</strong> ${genderAge}</div>
+                                    <div class="player-info-item"><strong>Профессия:</strong> ${profession}</div>
+                                    <div class="player-info-item"><strong>Состояние здоровья:</strong> ${health}</div>
+                                    <div class="player-info-item"><strong>Хобби:</strong> ${hobby}</div>
+                                    <div class="player-info-item"><strong>Фобия:</strong> ${phobia}</div>
+                                    <div class="player-info-item"><strong>Факт №1:</strong> ${fact1}</div>
+                                    <div class="player-info-item"><strong>Факт №2:</strong> ${fact2}</div>
+                                    <div class="player-info-item"><strong>Карточка действия №1:</strong> ${action1}</div>
+                                    <div class="player-info-item"><strong>Карточка действия №2:</strong> ${action2}</div>
                                 </div>
                             </div>
                             <div class="flip-card-back">

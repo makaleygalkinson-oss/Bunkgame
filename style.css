@@ -951,9 +951,12 @@ body {
     width: 100%;
     padding: 2rem;
     margin-top: 3rem;
+    display: flex;
+    justify-content: center;
 }
 
 .players-list-container {
+    max-width: 500px;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -977,6 +980,24 @@ body {
 
 .player-card-block .game-block-content {
     min-height: 850px;
+}
+
+.player-card-info {
+    padding: 1.5rem;
+    text-align: left;
+}
+
+.player-info-item {
+    margin-bottom: 1rem;
+    color: #d0d0d0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.player-info-item strong {
+    color: #00ff88;
+    font-weight: 700;
+    margin-right: 0.5rem;
 }
 
 /* Модальное окно лобби */
