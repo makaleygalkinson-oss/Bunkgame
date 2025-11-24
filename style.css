@@ -949,8 +949,8 @@ body {
 
 .players-list-container {
     margin-top: 1.5rem;
-    margin-left: 2rem;
-    width: calc(100% - 2rem);
+    margin-left: 3rem;
+    width: calc(100% - 3rem);
 }
 
 .players-list {
