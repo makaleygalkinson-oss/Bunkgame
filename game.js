@@ -2,6 +2,7 @@
 
 let currentLobbyId = null;
 let currentUserId = null;
+let revealRealtimeChannel = null;
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', async () => {
@@ -70,6 +71,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Настраиваем переворот карточек
         setupFlipCards();
+        
+        // Настраиваем значки разблокировки (один раз при инициализации)
+        setupRevealIcons();
+        
+        // Подписываемся на realtime обновления разблокировки
+        subscribeToRevealUpdates();
         
     } catch (err) {
         console.error('Ошибка инициализации игры:', err);
@@ -253,17 +260,50 @@ async function loadPlayersInfo() {
             const currentPlayerData = generatePlayerCardData(currentPlayer.id);
             currentPlayerCardEl.innerHTML = `
                 <div class="player-card-info">
-                    <div class="player-info-item"><strong>Пол и возраст:</strong> ${currentPlayerData.genderAge}</div>
-                    <div class="player-info-item"><strong>Профессия:</strong> ${currentPlayerData.profession}</div>
-                    <div class="player-info-item"><strong>Состояние здоровья:</strong> ${currentPlayerData.health}</div>
-                    <div class="player-info-item"><strong>Хобби:</strong> ${currentPlayerData.hobby}</div>
-                    <div class="player-info-item"><strong>Фобия:</strong> ${currentPlayerData.phobia}</div>
-                    <div class="player-info-item"><strong>Факт №1:</strong> ${currentPlayerData.fact1}</div>
-                    <div class="player-info-item"><strong>Факт №2:</strong> ${currentPlayerData.fact2}</div>
-                    <div class="player-info-item"><strong>Карточка действия №1:</strong> ${currentPlayerData.action1}</div>
-                    <div class="player-info-item"><strong>Карточка действия №2:</strong> ${currentPlayerData.action2}</div>
+                    <div class="player-info-item">
+                        <strong>Пол и возраст:</strong> ${currentPlayerData.genderAge}
+                        <span class="reveal-icon" data-item="genderAge" data-player-id="${currentPlayer.id}" title="Разблокировать параметр">👁️</span>
+                    </div>
+                    <div class="player-info-item">
+                        <strong>Профессия:</strong> ${currentPlayerData.profession}
+                        <span class="reveal-icon" data-item="profession" data-player-id="${currentPlayer.id}" title="Разблокировать параметр">👁️</span>
+                    </div>
+                    <div class="player-info-item">
+                        <strong>Состояние здоровья:</strong> ${currentPlayerData.health}
+                        <span class="reveal-icon" data-item="health" data-player-id="${currentPlayer.id}" title="Разблокировать параметр">👁️</span>
+                    </div>
+                    <div class="player-info-item">
+                        <strong>Хобби:</strong> ${currentPlayerData.hobby}
+                        <span class="reveal-icon" data-item="hobby" data-player-id="${currentPlayer.id}" title="Разблокировать параметр">👁️</span>
+                    </div>
+                    <div class="player-info-item">
+                        <strong>Фобия:</strong> ${currentPlayerData.phobia}
+                        <span class="reveal-icon" data-item="phobia" data-player-id="${currentPlayer.id}" title="Разблокировать параметр">👁️</span>
+                    </div>
+                    <div class="player-info-item">
+                        <strong>Факт №1:</strong> ${currentPlayerData.fact1}
+                        <span class="reveal-icon" data-item="fact1" data-player-id="${currentPlayer.id}" title="Разблокировать параметр">👁️</span>
+                    </div>
+                    <div class="player-info-item">
+                        <strong>Факт №2:</strong> ${currentPlayerData.fact2}
+                        <span class="reveal-icon" data-item="fact2" data-player-id="${currentPlayer.id}" title="Разблокировать параметр">👁️</span>
+                    </div>
+                    <div class="player-info-item">
+                        <strong>Карточка действия №1:</strong> ${currentPlayerData.action1}
+                        <span class="reveal-icon" data-item="action1" data-player-id="${currentPlayer.id}" title="Разблокировать параметр">👁️</span>
+                    </div>
+                    <div class="player-info-item">
+                        <strong>Карточка действия №2:</strong> ${currentPlayerData.action2}
+                        <span class="reveal-icon" data-item="action2" data-player-id="${currentPlayer.id}" title="Разблокировать параметр">👁️</span>
+                    </div>
                 </div>
             `;
+            
+            // Настраиваем обработчики для значков разблокировки
+            setupRevealIcons();
+            
+            // Восстанавливаем состояние разблокированных параметров
+            restoreRevealedItems();
         } else {
             currentPlayerCardEl.innerHTML = '';
         }
@@ -286,15 +326,15 @@ async function loadPlayersInfo() {
                                     <h2 class="game-block-title">${playerName}</h2>
                                 </div>
                                 <div class="game-block-content player-card-info">
-                                    <div class="player-info-item"><strong>Пол и возраст:</strong> <span class="blurred-text">${playerData.genderAge}</span></div>
-                                    <div class="player-info-item"><strong>Профессия:</strong> <span class="blurred-text">${playerData.profession}</span></div>
-                                    <div class="player-info-item"><strong>Состояние здоровья:</strong> <span class="blurred-text">${playerData.health}</span></div>
-                                    <div class="player-info-item"><strong>Хобби:</strong> <span class="blurred-text">${playerData.hobby}</span></div>
-                                    <div class="player-info-item"><strong>Фобия:</strong> <span class="blurred-text">${playerData.phobia}</span></div>
-                                    <div class="player-info-item"><strong>Факт №1:</strong> <span class="blurred-text">${playerData.fact1}</span></div>
-                                    <div class="player-info-item"><strong>Факт №2:</strong> <span class="blurred-text">${playerData.fact2}</span></div>
-                                    <div class="player-info-item"><strong>Карточка действия №1:</strong> <span class="blurred-text">${playerData.action1}</span></div>
-                                    <div class="player-info-item"><strong>Карточка действия №2:</strong> <span class="blurred-text">${playerData.action2}</span></div>
+                                    <div class="player-info-item" data-item="genderAge" data-player-id="${player.id}"><strong>Пол и возраст:</strong> <span class="blurred-text">${playerData.genderAge}</span></div>
+                                    <div class="player-info-item" data-item="profession" data-player-id="${player.id}"><strong>Профессия:</strong> <span class="blurred-text">${playerData.profession}</span></div>
+                                    <div class="player-info-item" data-item="health" data-player-id="${player.id}"><strong>Состояние здоровья:</strong> <span class="blurred-text">${playerData.health}</span></div>
+                                    <div class="player-info-item" data-item="hobby" data-player-id="${player.id}"><strong>Хобби:</strong> <span class="blurred-text">${playerData.hobby}</span></div>
+                                    <div class="player-info-item" data-item="phobia" data-player-id="${player.id}"><strong>Фобия:</strong> <span class="blurred-text">${playerData.phobia}</span></div>
+                                    <div class="player-info-item" data-item="fact1" data-player-id="${player.id}"><strong>Факт №1:</strong> <span class="blurred-text">${playerData.fact1}</span></div>
+                                    <div class="player-info-item" data-item="fact2" data-player-id="${player.id}"><strong>Факт №2:</strong> <span class="blurred-text">${playerData.fact2}</span></div>
+                                    <div class="player-info-item" data-item="action1" data-player-id="${player.id}"><strong>Карточка действия №1:</strong> <span class="blurred-text">${playerData.action1}</span></div>
+                                    <div class="player-info-item" data-item="action2" data-player-id="${player.id}"><strong>Карточка действия №2:</strong> <span class="blurred-text">${playerData.action2}</span></div>
                                 </div>
                             </div>
                             <div class="flip-card-back">
@@ -362,10 +402,185 @@ async function loadVoting() {
 }
 
 
+// Настройка значков разблокировки
+function setupRevealIcons() {
+    // Используем делегирование событий для значков разблокировки
+    document.addEventListener('click', async (e) => {
+        const icon = e.target.closest('.reveal-icon');
+        if (!icon) return;
+        
+        e.stopPropagation(); // Предотвращаем переворот карточки
+        
+        const itemType = icon.getAttribute('data-item');
+        const playerId = icon.getAttribute('data-player-id');
+        
+        if (!itemType || !playerId) return;
+        
+        // Проверяем, не использован ли уже этот значок
+        if (icon.classList.contains('used')) {
+            return; // Уже использован
+        }
+        
+        console.log('Разблокировка параметра:', itemType, 'для игрока:', playerId);
+        
+        // Сохраняем разблокировку в Supabase
+        await saveRevealState(playerId, itemType);
+        
+        // Убираем blur локально
+        revealItem(playerId, itemType);
+        
+        // Делаем иконку неактивной после использования
+        icon.classList.add('used');
+        icon.style.opacity = '0.5';
+        icon.style.cursor = 'not-allowed';
+    });
+}
+
+// Сохранение состояния разблокировки в Supabase
+async function saveRevealState(playerId, itemType) {
+    try {
+        if (!currentLobbyId) return;
+        
+        // Получаем текущее состояние разблокировки из лобби
+        const { data: lobby, error: fetchError } = await supabase
+            .from('lobbies')
+            .select('revealed_items')
+            .eq('id', parseInt(currentLobbyId))
+            .single();
+        
+        if (fetchError) {
+            console.error('Ошибка получения данных лобби:', fetchError);
+            return;
+        }
+        
+        // Инициализируем объект разблокированных элементов
+        let revealedItems = lobby.revealed_items || {};
+        if (!revealedItems[playerId]) {
+            revealedItems[playerId] = {};
+        }
+        
+        // Добавляем разблокированный параметр
+        revealedItems[playerId][itemType] = true;
+        
+        // Сохраняем в Supabase
+        const { error: updateError } = await supabase
+            .from('lobbies')
+            .update({ revealed_items: revealedItems })
+            .eq('id', parseInt(currentLobbyId));
+        
+        if (updateError) {
+            console.error('Ошибка сохранения разблокировки:', updateError);
+        } else {
+            console.log('Разблокировка сохранена:', playerId, itemType);
+        }
+    } catch (err) {
+        console.error('Ошибка сохранения состояния разблокировки:', err);
+    }
+}
+
+// Функция для разблокировки пункта (убирает blur)
+function revealItem(playerId, itemType) {
+    // Находим все элементы с данным типом для данного игрока
+    const items = document.querySelectorAll(`.player-info-item[data-item="${itemType}"][data-player-id="${playerId}"]`);
+    
+    items.forEach(item => {
+        const blurredText = item.querySelector('.blurred-text');
+        if (blurredText) {
+            blurredText.classList.remove('blurred-text');
+        }
+    });
+}
+
+// Восстановление состояния разблокированных параметров
+function restoreRevealedItems() {
+    if (!currentLobbyId) return;
+    
+    // Получаем состояние разблокировки из лобби
+    supabase
+        .from('lobbies')
+        .select('revealed_items')
+        .eq('id', parseInt(currentLobbyId))
+        .single()
+        .then(({ data: lobby, error }) => {
+            if (error) {
+                console.error('Ошибка получения разблокированных элементов:', error);
+                return;
+            }
+            
+            const revealedItems = lobby?.revealed_items || {};
+            
+            // Применяем разблокировку ко всем параметрам
+            Object.keys(revealedItems).forEach(playerId => {
+                const playerRevealed = revealedItems[playerId] || {};
+                Object.keys(playerRevealed).forEach(itemType => {
+                    if (playerRevealed[itemType]) {
+                        revealItem(playerId, itemType);
+                        
+                        // Помечаем иконки как использованные
+                        const icon = document.querySelector(`.reveal-icon[data-item="${itemType}"][data-player-id="${playerId}"]`);
+                        if (icon) {
+                            icon.classList.add('used');
+                            icon.style.opacity = '0.5';
+                            icon.style.cursor = 'not-allowed';
+                        }
+                    }
+                });
+            });
+        });
+}
+
+// Подписка на realtime обновления разблокировки
+function subscribeToRevealUpdates() {
+    if (!currentLobbyId) return;
+    
+    // Отписываемся от предыдущей подписки
+    unsubscribeFromRevealUpdates();
+    
+    // Подписываемся на изменения в таблице lobbies
+    revealRealtimeChannel = supabase
+        .channel(`reveal-updates-${currentLobbyId}`)
+        .on('postgres_changes', 
+            { 
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'lobbies',
+                filter: `id=eq.${currentLobbyId}`
+            },
+            (payload) => {
+                console.log('Обновление разблокировки:', payload);
+                const revealedItems = payload.new.revealed_items || {};
+                
+                // Обновляем все карточки игроков
+                Object.keys(revealedItems).forEach(playerId => {
+                    const playerRevealed = revealedItems[playerId] || {};
+                    Object.keys(playerRevealed).forEach(itemType => {
+                        if (playerRevealed[itemType]) {
+                            revealItem(playerId, itemType);
+                        }
+                    });
+                });
+            }
+        )
+        .subscribe();
+}
+
+// Отписка от обновлений
+function unsubscribeFromRevealUpdates() {
+    if (revealRealtimeChannel) {
+        supabase.removeChannel(revealRealtimeChannel);
+        revealRealtimeChannel = null;
+    }
+}
+
 // Настройка переворота карточек
 function setupFlipCards() {
     // Используем делегирование событий для всех карточек
     document.addEventListener('click', (e) => {
+        // Не переворачиваем карточку при клике на иконку разблокировки
+        if (e.target.closest('.reveal-icon')) {
+            return;
+        }
+        
         const flipCard = e.target.closest('.flip-card');
         if (flipCard) {
             const flipCardInner = flipCard.querySelector('.flip-card-inner');
@@ -406,6 +621,9 @@ async function exitFromLobby() {
         
         // Удаляем информацию о лобби из sessionStorage
         sessionStorage.removeItem('currentLobbyId');
+        
+        // Отписываемся от realtime обновлений
+        unsubscribeFromRevealUpdates();
         
         // Возвращаемся на главную страницу
         window.location.href = 'index.html';
