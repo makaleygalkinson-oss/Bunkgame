@@ -852,16 +852,47 @@ body {
     flex-direction: column;
 }
 
-/* Убираем backdrop-filter для карточек игроков, чтобы blur был только на тексте */
+/* Убираем backdrop-filter для всех карточек игроков */
 .player-card-block,
-.flip-card-front.player-card-block {
+.players-block,
+.flip-card-front.player-card-block,
+.flip-card-front.players-block {
     backdrop-filter: none !important;
     filter: none !important;
 }
 
-.player-card-block .game-block-content {
+.player-card-block .game-block-content,
+.players-block .game-block-content {
     backdrop-filter: none !important;
     filter: none !important;
+}
+
+.player-card-info {
+    backdrop-filter: none !important;
+    filter: none !important;
+}
+
+/* Убираем backdrop-filter для всех карточек игроков */
+.player-card-block,
+.players-block,
+.flip-card-front.player-card-block,
+.flip-card-front.players-block,
+.flip-card:has(.player-card-block),
+.flip-card:has(.players-block) {
+    backdrop-filter: none !important;
+    filter: none !important;
+}
+
+.player-card-block .game-block-content,
+.players-block .game-block-content,
+.player-card-block *,
+.players-block * {
+    backdrop-filter: none !important;
+}
+
+.player-card-block .game-block-content *,
+.players-block .game-block-content * {
+    backdrop-filter: none !important;
 }
 
 .game-block:hover {
