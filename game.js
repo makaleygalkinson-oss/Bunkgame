@@ -1633,6 +1633,16 @@ async function loadVoting() {
             return;
         }
         
+        // Сортируем игроков по ID для стабильного порядка
+        const sortedPlayers = [...players].sort((a, b) => {
+            // Сортируем по ID (приводим к строкам для надежности)
+            const idA = String(a.id).toLowerCase();
+            const idB = String(b.id).toLowerCase();
+            if (idA < idB) return -1;
+            if (idA > idB) return 1;
+            return 0;
+        });
+        
         // Загружаем все голоса из БД
         const { data: lobbyData, error: votesError } = await supabase
             .from('lobbies')
@@ -1649,7 +1659,7 @@ async function loadVoting() {
         }
         
         // Создаем HTML для каждого игрока с его голосами
-        const votingHTML = players.map(player => {
+        const votingHTML = sortedPlayers.map(player => {
             const playerName = player.name || player.email || 'Неизвестный';
             const playerColor = getPlayerColor(player.id);
             
