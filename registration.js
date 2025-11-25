@@ -873,6 +873,15 @@ async function createLobby() {
             newLobbyId = parseInt(maxLobbyData[0].lobby_id) + 1;
         }
         
+        // Генерируем данные карточки бункера и секретной информации
+        let bunkerData = null;
+        if (typeof window.generateBunkerData === 'function') {
+            bunkerData = window.generateBunkerData();
+        } else {
+            // Если функция не загружена, создаем пустые данные (будут сгенерированы при первой загрузке)
+            console.warn('Функция generateBunkerData не найдена, данные будут сгенерированы при загрузке игры');
+        }
+        
         // Создаем запись лобби в базе данных
         const lobbyData = {
             lobby_id: newLobbyId,
@@ -880,7 +889,8 @@ async function createLobby() {
             creator_name: user.name,
             active_role: roleValue,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            bunker_data: bunkerData
         };
         
         const { data: insertedData, error } = await supabase

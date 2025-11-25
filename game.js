@@ -414,6 +414,51 @@ function getRandomItems(items, count) {
     return shuffled.slice(0, Math.min(count, items.length));
 }
 
+// Генерация данных карточки бункера и секретной информации
+function generateBunkerData() {
+    // Выбираем случайную катастрофу
+    const randomCatastrophe = CATASTROPHES[Math.floor(Math.random() * CATASTROPHES.length)];
+    
+    // Генерируем срок жизни в бункере на основе диапазона катастрофы
+    const lifetimeData = generateLifetime(randomCatastrophe.lifetimeRange);
+    const lifetimeDisplay = `${lifetimeData.value} ${lifetimeData.unit}`;
+    
+    // Выбираем случайные варианты для оснащения
+    const medpoint = MEDPOINT_OPTIONS[Math.floor(Math.random() * MEDPOINT_OPTIONS.length)];
+    const mechanicRoom = MECHANIC_ROOM_OPTIONS[Math.floor(Math.random() * MECHANIC_ROOM_OPTIONS.length)];
+    const growingRoom = GROWING_ROOM_OPTIONS[Math.floor(Math.random() * GROWING_ROOM_OPTIONS.length)];
+    
+    // Получаем предметы спец. снабжения для данной катастрофы
+    const supplyItems = SPECIAL_SUPPLY_ITEMS[randomCatastrophe.name] || ['Запас продовольствия', 'Вода', 'Медицинские принадлежности'];
+    const specialSupplyCount = Math.floor(Math.random() * 2) + 2; // 2 или 3 предмета
+    const selectedSupplies = getRandomItems(supplyItems, specialSupplyCount);
+    const specialSupply = selectedSupplies.join(', ');
+    
+    // Генерируем секретную информацию
+    const hiddenThreat = HIDDEN_THREATS[Math.floor(Math.random() * HIDDEN_THREATS.length)];
+    const externalLocation = EXTERNAL_LOCATIONS[Math.floor(Math.random() * EXTERNAL_LOCATIONS.length)];
+    
+    return {
+        bunkerCard: {
+            catastrophe: randomCatastrophe.name,
+            description: randomCatastrophe.description,
+            lifetime: lifetimeDisplay,
+            medpoint: medpoint,
+            mechanicRoom: mechanicRoom,
+            growingRoom: growingRoom,
+            specialSupply: specialSupply
+        },
+        secretInfo: {
+            hiddenThreat: hiddenThreat,
+            externalLocation: externalLocation
+        }
+    };
+}
+
+// Экспорт функций для использования в registration.js
+window.generateBunkerData = generateBunkerData;
+window.generateLifetime = generateLifetime;
+
 // Список скрытых угроз (Список 1)
 const HIDDEN_THREATS = [
     'Обнаружено, что запасное топливо для генератора было некачественным и может вывести его из строя.',
@@ -454,17 +499,40 @@ async function loadBunkerSecretInfo() {
     if (!bunkerSecretContent) return;
     
     try {
-        // Выбираем случайную скрытую угрозу
-        const hiddenThreat = HIDDEN_THREATS[Math.floor(Math.random() * HIDDEN_THREATS.length)];
+        // Получаем данные секретной информации из БД
+        const { data: lobbyData, error: lobbyError } = await supabase
+            .from('lobbies')
+            .select('bunker_data')
+            .eq('lobby_id', parseInt(currentLobbyId))
+            .maybeSingle();
         
-        // Выбираем случайную внешнюю локацию
-        const externalLocation = EXTERNAL_LOCATIONS[Math.floor(Math.random() * EXTERNAL_LOCATIONS.length)];
+        if (lobbyError) {
+            console.error('Ошибка загрузки секретной информации бункера:', lobbyError);
+            bunkerSecretContent.innerHTML = '<p class="game-error">Ошибка загрузки секретной информации</p>';
+            return;
+        }
+        
+        // Если данных нет в БД, генерируем новые (для обратной совместимости)
+        let secretInfoData;
+        if (!lobbyData || !lobbyData.bunker_data || !lobbyData.bunker_data.secretInfo) {
+            console.log('Данные секретной информации не найдены в БД, генерируем новые');
+            const generatedData = generateBunkerData();
+            secretInfoData = generatedData.secretInfo;
+            
+            // Сохраняем в БД для будущих загрузок
+            await supabase
+                .from('lobbies')
+                .update({ bunker_data: generatedData })
+                .eq('lobby_id', parseInt(currentLobbyId));
+        } else {
+            secretInfoData = lobbyData.bunker_data.secretInfo;
+        }
         
         bunkerSecretContent.innerHTML = `
             <div class="bunker-card-info">
                 <div class="bunker-info-item"><strong>Секретные Роли:</strong> </div>
-                <div class="bunker-info-item"><strong>Скрытые угрозы:</strong> ${hiddenThreat}</div>
-                <div class="bunker-info-item"><strong>Внешняя местность:</strong> ${externalLocation}</div>
+                <div class="bunker-info-item"><strong>Скрытые угрозы:</strong> ${secretInfoData.hiddenThreat}</div>
+                <div class="bunker-info-item"><strong>Внешняя местность:</strong> ${secretInfoData.externalLocation}</div>
             </div>
         `;
     } catch (err) {
@@ -479,6 +547,35 @@ async function loadBunkerCard() {
     if (!bunkerCardContent) return;
     
     try {
+        // Получаем данные карточки бункера из БД
+        const { data: lobbyData, error: lobbyError } = await supabase
+            .from('lobbies')
+            .select('bunker_data')
+            .eq('lobby_id', parseInt(currentLobbyId))
+            .maybeSingle();
+        
+        if (lobbyError) {
+            console.error('Ошибка загрузки данных карточки бункера:', lobbyError);
+            bunkerCardContent.innerHTML = '<p class="game-error">Ошибка загрузки карточки бункера</p>';
+            return;
+        }
+        
+        // Если данных нет в БД, генерируем новые (для обратной совместимости)
+        let bunkerCardData;
+        if (!lobbyData || !lobbyData.bunker_data || !lobbyData.bunker_data.bunkerCard) {
+            console.log('Данные карточки бункера не найдены в БД, генерируем новые');
+            const generatedData = generateBunkerData();
+            bunkerCardData = generatedData.bunkerCard;
+            
+            // Сохраняем в БД для будущих загрузок
+            await supabase
+                .from('lobbies')
+                .update({ bunker_data: generatedData })
+                .eq('lobby_id', parseInt(currentLobbyId));
+        } else {
+            bunkerCardData = lobbyData.bunker_data.bunkerCard;
+        }
+        
         // Получаем список игроков в лобби для расчета вместимости
         const { data: players, error: playersError } = await supabase
             .from('users')
@@ -493,35 +590,17 @@ async function loadBunkerCard() {
         const playerCount = players ? players.length : 0;
         const capacity = Math.floor(playerCount / 2);
         
-        // Выбираем случайную катастрофу
-        const randomCatastrophe = CATASTROPHES[Math.floor(Math.random() * CATASTROPHES.length)];
-        
-        // Генерируем срок жизни в бункере на основе диапазона катастрофы
-        const lifetimeData = generateLifetime(randomCatastrophe.lifetimeRange);
-        const lifetimeDisplay = `${lifetimeData.value} ${lifetimeData.unit}`;
-        
-        // Выбираем случайные варианты для оснащения
-        const medpoint = MEDPOINT_OPTIONS[Math.floor(Math.random() * MEDPOINT_OPTIONS.length)];
-        const mechanicRoom = MECHANIC_ROOM_OPTIONS[Math.floor(Math.random() * MECHANIC_ROOM_OPTIONS.length)];
-        const growingRoom = GROWING_ROOM_OPTIONS[Math.floor(Math.random() * GROWING_ROOM_OPTIONS.length)];
-        
-        // Получаем предметы спец. снабжения для данной катастрофы
-        const supplyItems = SPECIAL_SUPPLY_ITEMS[randomCatastrophe.name] || ['Запас продовольствия', 'Вода', 'Медицинские принадлежности'];
-        const specialSupplyCount = Math.floor(Math.random() * 2) + 2; // 2 или 3 предмета
-        const selectedSupplies = getRandomItems(supplyItems, specialSupplyCount);
-        const specialSupply = selectedSupplies.join(', ');
-        
         bunkerCardContent.innerHTML = `
             <div class="bunker-card-info">
-                <div class="bunker-info-item"><strong>Катастрофа:</strong> ${randomCatastrophe.name}</div>
-                <div class="bunker-info-item"><strong>Описание катастрофы:</strong> ${randomCatastrophe.description}</div>
-                <div class="bunker-info-item"><strong>Срок жизни в бункере:</strong> ${lifetimeDisplay}</div>
+                <div class="bunker-info-item"><strong>Катастрофа:</strong> ${bunkerCardData.catastrophe}</div>
+                <div class="bunker-info-item"><strong>Описание катастрофы:</strong> ${bunkerCardData.description}</div>
+                <div class="bunker-info-item"><strong>Срок жизни в бункере:</strong> ${bunkerCardData.lifetime}</div>
                 <div class="bunker-info-item"><strong>Условия Бункера:</strong> (вместимость: ${capacity} человек)</div>
                 <div class="bunker-info-item"><strong>Оснащение бункера:</strong></div>
-                <div class="bunker-info-subitem">Медпункт: ${medpoint}</div>
-                <div class="bunker-info-subitem">Комната механика: ${mechanicRoom}</div>
-                <div class="bunker-info-subitem">Комната выращивания: ${growingRoom}</div>
-                <div class="bunker-info-item"><strong>Спец.Снабжение:</strong> ${specialSupply}</div>
+                <div class="bunker-info-subitem">Медпункт: ${bunkerCardData.medpoint}</div>
+                <div class="bunker-info-subitem">Комната механика: ${bunkerCardData.mechanicRoom}</div>
+                <div class="bunker-info-subitem">Комната выращивания: ${bunkerCardData.growingRoom}</div>
+                <div class="bunker-info-item"><strong>Спец.Снабжение:</strong> ${bunkerCardData.specialSupply}</div>
             </div>
         `;
     } catch (err) {
