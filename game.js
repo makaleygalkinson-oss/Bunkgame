@@ -203,27 +203,6 @@ async function loadLobbyInfo() {
     }
 }
 
-// Разрешение переворота всех карточек (кроме голосования)
-function enableAllCardsFlip() {
-    // Карточка бункера
-    const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
-    if (bunkerCardFlipCard) {
-        bunkerCardFlipCard.classList.add('game-started');
-    }
-    
-    // Секретная карточка
-    const bunkerSecretFlipCard = document.getElementById('bunkerSecretFlipCard');
-    if (bunkerSecretFlipCard) {
-        bunkerSecretFlipCard.classList.add('game-started');
-    }
-    
-    // Карточка текущего игрока
-    const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
-    if (currentPlayerCardFlipCard) {
-        currentPlayerCardFlipCard.classList.add('game-started');
-    }
-}
-
 // Проверка статуса игры
 async function checkGameStatus() {
     try {
@@ -238,9 +217,12 @@ async function checkGameStatus() {
             return;
         }
         
-        // Если игра начата, разрешаем переворот всех карточек
+        // Если игра начата, разрешаем переворот карточки бункера
         if (lobbyData && lobbyData.game_started) {
-            enableAllCardsFlip();
+            const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+            if (bunkerCardFlipCard) {
+                bunkerCardFlipCard.classList.add('game-started');
+            }
             
             // Скрываем кнопку старта
             const startGameBtn = document.getElementById('startGameBtn');
@@ -536,68 +518,25 @@ const EXTERNAL_LOCATIONS = [
     'Ваш бункер находится слишком близко к крупной дорожной развязке или бывшему городу.'
 ];
 
-// Генерация данных секретной информации
-function generateBunkerSecretData() {
-    // Выбираем случайную скрытую угрозу
-    const hiddenThreat = HIDDEN_THREATS[Math.floor(Math.random() * HIDDEN_THREATS.length)];
-    
-    // Выбираем случайную внешнюю локацию
-    const externalLocation = EXTERNAL_LOCATIONS[Math.floor(Math.random() * EXTERNAL_LOCATIONS.length)];
-    
-    return {
-        hiddenThreat: hiddenThreat,
-        externalLocation: externalLocation
-    };
-}
-
-// Отображение данных секретной информации
-function displayBunkerSecretInfo(data) {
-    const bunkerSecretContent = document.getElementById('bunkerSecretContent');
-    if (!bunkerSecretContent || !data) return;
-    
-    bunkerSecretContent.innerHTML = `
-        <div class="bunker-card-info">
-            <div class="bunker-info-item"><strong>Секретные Роли:</strong> </div>
-            <div class="bunker-info-item"><strong>Скрытые угрозы:</strong> ${data.hiddenThreat}</div>
-            <div class="bunker-info-item"><strong>Внешняя местность:</strong> ${data.externalLocation}</div>
-        </div>
-    `;
-}
-
-// Загрузка секретной информации бункера из БД
+// Загрузка секретной информации бункера
 async function loadBunkerSecretInfo() {
     const bunkerSecretContent = document.getElementById('bunkerSecretContent');
     if (!bunkerSecretContent) return;
     
     try {
-        // Загружаем данные секретной информации из БД
-        const { data: lobbyData, error: lobbyError } = await supabase
-            .from('lobbies')
-            .select('bunker_secret_data, game_started')
-            .eq('lobby_id', parseInt(currentLobbyId))
-            .maybeSingle();
+        // Выбираем случайную скрытую угрозу
+        const hiddenThreat = HIDDEN_THREATS[Math.floor(Math.random() * HIDDEN_THREATS.length)];
         
-        if (lobbyError) {
-            console.error('Ошибка загрузки данных секретной информации:', lobbyError);
-            bunkerSecretContent.innerHTML = '<p class="game-error">Ошибка загрузки секретной информации</p>';
-            return;
-        }
+        // Выбираем случайную внешнюю локацию
+        const externalLocation = EXTERNAL_LOCATIONS[Math.floor(Math.random() * EXTERNAL_LOCATIONS.length)];
         
-        // Если игра не начата, показываем заглушку
-        if (!lobbyData || !lobbyData.game_started || !lobbyData.bunker_secret_data) {
-            bunkerSecretContent.innerHTML = `
-                <div class="bunker-card-info">
-                    <p style="text-align: center; color: #808080; padding: 2rem;">
-                        Нажмите "Start Game" для начала игры
-                    </p>
-                </div>
-            `;
-            return;
-        }
-        
-        // Отображаем данные из БД
-        displayBunkerSecretInfo(lobbyData.bunker_secret_data);
-        
+        bunkerSecretContent.innerHTML = `
+            <div class="bunker-card-info">
+                <div class="bunker-info-item"><strong>Секретные Роли:</strong> </div>
+                <div class="bunker-info-item"><strong>Скрытые угрозы:</strong> ${hiddenThreat}</div>
+                <div class="bunker-info-item"><strong>Внешняя местность:</strong> ${externalLocation}</div>
+            </div>
+        `;
     } catch (err) {
         console.error('Ошибка загрузки секретной информации бункера:', err);
         bunkerSecretContent.innerHTML = '<p class="game-error">Ошибка загрузки секретной информации</p>';
@@ -741,15 +680,11 @@ async function startGame() {
         // Генерируем данные карточки бункера
         const bunkerCardData = generateBunkerCardData(playerCount);
         
-        // Генерируем данные секретной информации
-        const bunkerSecretData = generateBunkerSecretData();
-        
         // Сохраняем данные в БД
         const { error: updateError } = await supabase
             .from('lobbies')
             .update({ 
                 bunker_card_data: bunkerCardData,
-                bunker_secret_data: bunkerSecretData,
                 game_started: true
             })
             .eq('lobby_id', parseInt(currentLobbyId));
@@ -764,14 +699,16 @@ async function startGame() {
             return;
         }
         
-        console.log('✅ Игра начата, данные карточки бункера и секретной информации сохранены');
+        console.log('✅ Игра начата, данные карточки бункера сохранены');
         
         // Отображаем данные
         displayBunkerCard(bunkerCardData);
-        displayBunkerSecretInfo(bunkerSecretData);
         
-        // Разрешаем переворот всех карточек (кроме голосования)
-        enableAllCardsFlip();
+        // Разрешаем переворот карточки бункера
+        const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+        if (bunkerCardFlipCard) {
+            bunkerCardFlipCard.classList.add('game-started');
+        }
         
         // Скрываем кнопку старта
         if (startGameBtn) {
@@ -2658,18 +2595,19 @@ function subscribeToBlurUpdates() {
                     // Отображаем данные карточки бункера
                     displayBunkerCard(bunkerCardData);
                     
+                    // Разрешаем переворот карточки бункера
+                    const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+                    if (bunkerCardFlipCard) {
+                        bunkerCardFlipCard.classList.add('game-started');
+                    }
+                    
+                    // Скрываем кнопку старта
+                    const startGameBtn = document.getElementById('startGameBtn');
+                    if (startGameBtn) {
+                        startGameBtn.style.display = 'none';
+                    }
+                    
                     console.log('✅ Карточка бункера обновлена через realtime');
-                }
-                
-                // Обработка обновлений bunker_secret_data (секретная информация)
-                if (payload.new && payload.new.bunker_secret_data) {
-                    const bunkerSecretData = payload.new.bunker_secret_data;
-                    console.log('📦 Получены bunker_secret_data через realtime:', bunkerSecretData);
-                    
-                    // Отображаем данные секретной информации
-                    displayBunkerSecretInfo(bunkerSecretData);
-                    
-                    console.log('✅ Секретная информация обновлена через realtime');
                 }
                 
                 // Обработка обновлений game_started
@@ -2678,8 +2616,11 @@ function subscribeToBlurUpdates() {
                     console.log('📦 Получен game_started через realtime:', gameStarted);
                     
                     if (gameStarted) {
-                        // Разрешаем переворот всех карточек (кроме голосования)
-                        enableAllCardsFlip();
+                        // Разрешаем переворот карточки бункера
+                        const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+                        if (bunkerCardFlipCard) {
+                            bunkerCardFlipCard.classList.add('game-started');
+                        }
                         
                         // Скрываем кнопку старта
                         const startGameBtn = document.getElementById('startGameBtn');
@@ -2926,24 +2867,16 @@ function setupFlipCards() {
         
         const flipCard = e.target.closest('.flip-card');
         if (flipCard) {
-            // Проверяем, является ли это блоком голосования (его не блокируем)
-            const votingBlock = flipCard.querySelector('.voting-block');
-            if (votingBlock) {
-                // Голосование всегда можно переворачивать
-                const flipCardInner = flipCard.querySelector('.flip-card-inner');
-                if (flipCardInner) {
-                    flipCardInner.classList.toggle('flipped');
+            // Проверяем, является ли это карточкой бункера
+            const bunkerCard = flipCard.querySelector('.bunker-card-block');
+            if (bunkerCard) {
+                // Проверяем, начата ли игра
+                const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+                if (bunkerCardFlipCard && !bunkerCardFlipCard.classList.contains('game-started')) {
+                    // Игра не начата - блокируем переворот
+                    console.log('ℹ️ Игра еще не начата, карточка бункера заблокирована');
+                    return;
                 }
-                return;
-            }
-            
-            // Для всех остальных карточек проверяем статус игры
-            // Проверяем, начата ли игра (проверяем любую из карточек)
-            const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
-            if (bunkerCardFlipCard && !bunkerCardFlipCard.classList.contains('game-started')) {
-                // Игра не начата - блокируем переворот
-                console.log('ℹ️ Игра еще не начата, карточка заблокирована');
-                return;
             }
             
             const flipCardInner = flipCard.querySelector('.flip-card-inner');
