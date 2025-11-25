@@ -1260,11 +1260,8 @@ body {
 .voting-list {
     padding: 1.5rem;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    align-items: center;
-    justify-content: flex-start;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .voting-item {
@@ -1275,6 +1272,16 @@ body {
     background: rgba(50, 50, 50, 0.6);
     border-radius: 8px;
     border: 1px solid rgba(150, 150, 150, 0.2);
+    gap: 1rem;
+}
+
+.voting-circles-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 .voting-player-name {
@@ -2263,9 +2270,8 @@ body {
     
     /* Голосование */
     .voting-list {
-        gap: 1rem;
-        flex-direction: row;
-        flex-wrap: wrap;
+        gap: 1.2rem;
+        flex-direction: column;
     }
     
     .voting-item {
@@ -2423,12 +2429,17 @@ body {
     
     .voting-list {
         text-align: left;
-        flex-direction: row;
-        flex-wrap: wrap;
+        flex-direction: column;
     }
     
     .voting-item {
         text-align: left;
-        justify-content: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    
+    .voting-circles-container {
+        flex-direction: row;
+        flex-wrap: wrap;
     }
 }
