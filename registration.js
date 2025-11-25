@@ -880,7 +880,8 @@ async function createLobby() {
             creator_name: user.name,
             active_role: roleValue,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            cards_locked: true  // По умолчанию карточки заблокированы
         };
         
         const { data: insertedData, error } = await supabase

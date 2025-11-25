@@ -739,12 +739,12 @@ async function applyCardsLockState(isLocked, bunkerCardData) {
         if (!flipCardInner) return;
         
         if (isLocked) {
-            // Блокируем: переворачиваем картинкой вверх и добавляем класс блокировки
-            flipCardInner.classList.remove('flipped');
+            // Блокируем: переворачиваем картинкой вверх (добавляем flipped, чтобы показать flip-card-back) и добавляем класс блокировки
+            flipCardInner.classList.add('flipped');
             flipCard.classList.add('cards-locked');
         } else {
-            // Разблокируем: переворачиваем текстом вверх и убираем класс блокировки
-            flipCardInner.classList.add('flipped');
+            // Разблокируем: переворачиваем текстом вверх (убираем flipped, чтобы показать flip-card-front) и убираем класс блокировки
+            flipCardInner.classList.remove('flipped');
             flipCard.classList.remove('cards-locked');
         }
     });
