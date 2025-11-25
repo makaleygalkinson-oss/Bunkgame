@@ -97,8 +97,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Загружаем карточку бункера
         await loadBunkerCard();
         
-        // Проверяем статус игры и разрешаем переворот карточки если игра начата
-        await checkGameStatus();
+        // Проверяем и применяем состояние блокировки карточек
+        await checkAndApplyCardsLockState();
         
         // Загружаем секретную информацию бункера
         await loadBunkerSecretInfo();
@@ -203,37 +203,6 @@ async function loadLobbyInfo() {
     }
 }
 
-// Проверка статуса игры
-async function checkGameStatus() {
-    try {
-        const { data: lobbyData, error } = await supabase
-            .from('lobbies')
-            .select('game_started')
-            .eq('lobby_id', parseInt(currentLobbyId))
-            .maybeSingle();
-        
-        if (error) {
-            console.error('Ошибка проверки статуса игры:', error);
-            return;
-        }
-        
-        // Если игра начата, разрешаем переворот карточки бункера
-        if (lobbyData && lobbyData.game_started) {
-            const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
-            if (bunkerCardFlipCard) {
-                bunkerCardFlipCard.classList.add('game-started');
-            }
-            
-            // Скрываем кнопку старта
-            const startGameBtn = document.getElementById('startGameBtn');
-            if (startGameBtn) {
-                startGameBtn.style.display = 'none';
-            }
-        }
-    } catch (err) {
-        console.error('Ошибка проверки статуса игры:', err);
-    }
-}
 
 // Настройка кнопки выхода
 function setupExitButton() {
@@ -651,7 +620,7 @@ function setupStartGameButton() {
     });
 }
 
-// Старт игры - генерация и сохранение данных карточки бункера
+// Старт игры - переключение состояния карточек
 async function startGame() {
     try {
         const startGameBtn = document.getElementById('startGameBtn');
@@ -660,14 +629,15 @@ async function startGame() {
             startGameBtn.textContent = 'Загрузка...';
         }
         
-        // Получаем список игроков в лобби для расчета вместимости
-        const { data: players, error: playersError } = await supabase
-            .from('users')
-            .select('id')
-            .eq('lobby_id', parseInt(currentLobbyId));
+        // Получаем текущее состояние блокировки карточек из БД
+        const { data: lobbyData, error: fetchError } = await supabase
+            .from('lobbies')
+            .select('cards_locked, bunker_card_data, game_started')
+            .eq('lobby_id', parseInt(currentLobbyId))
+            .maybeSingle();
         
-        if (playersError) {
-            console.error('Ошибка загрузки игроков для старта игры:', playersError);
+        if (fetchError) {
+            console.error('Ошибка загрузки состояния карточек:', fetchError);
             if (startGameBtn) {
                 startGameBtn.disabled = false;
                 startGameBtn.textContent = 'Start Game';
@@ -675,22 +645,55 @@ async function startGame() {
             return;
         }
         
-        const playerCount = players ? players.length : 0;
+        // Определяем новое состояние: если карточки заблокированы - разблокируем, и наоборот
+        const currentLocked = lobbyData?.cards_locked !== false; // По умолчанию true (заблокированы)
+        const newLocked = !currentLocked;
         
-        // Генерируем данные карточки бункера
-        const bunkerCardData = generateBunkerCardData(playerCount);
+        // Если карточки разблокируются впервые, генерируем данные карточки бункера
+        let bunkerCardData = lobbyData?.bunker_card_data;
+        let gameStarted = lobbyData?.game_started || false;
         
-        // Сохраняем данные в БД
+        if (!gameStarted && !newLocked) {
+            // Первый раз разблокируем - генерируем данные
+            const { data: players, error: playersError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('lobby_id', parseInt(currentLobbyId));
+            
+            if (playersError) {
+                console.error('Ошибка загрузки игроков для старта игры:', playersError);
+                if (startGameBtn) {
+                    startGameBtn.disabled = false;
+                    startGameBtn.textContent = 'Start Game';
+                }
+                return;
+            }
+            
+            const playerCount = players ? players.length : 0;
+            bunkerCardData = generateBunkerCardData(playerCount);
+            gameStarted = true;
+        }
+        
+        // Сохраняем состояние в БД
+        const updateData = {
+            cards_locked: newLocked
+        };
+        
+        if (bunkerCardData) {
+            updateData.bunker_card_data = bunkerCardData;
+        }
+        
+        if (gameStarted) {
+            updateData.game_started = true;
+        }
+        
         const { error: updateError } = await supabase
             .from('lobbies')
-            .update({ 
-                bunker_card_data: bunkerCardData,
-                game_started: true
-            })
+            .update(updateData)
             .eq('lobby_id', parseInt(currentLobbyId));
         
         if (updateError) {
-            console.error('Ошибка сохранения данных карточки бункера:', updateError);
+            console.error('Ошибка сохранения состояния карточек:', updateError);
             alert('Ошибка сохранения данных. Попробуйте еще раз.');
             if (startGameBtn) {
                 startGameBtn.disabled = false;
@@ -699,20 +702,14 @@ async function startGame() {
             return;
         }
         
-        console.log('✅ Игра начата, данные карточки бункера сохранены');
+        console.log(`✅ Состояние карточек обновлено: ${newLocked ? 'заблокированы' : 'разблокированы'}`);
         
-        // Отображаем данные
-        displayBunkerCard(bunkerCardData);
+        // Применяем состояние к карточкам
+        await applyCardsLockState(newLocked, bunkerCardData);
         
-        // Разрешаем переворот карточки бункера
-        const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
-        if (bunkerCardFlipCard) {
-            bunkerCardFlipCard.classList.add('game-started');
-        }
-        
-        // Скрываем кнопку старта
         if (startGameBtn) {
-            startGameBtn.style.display = 'none';
+            startGameBtn.disabled = false;
+            startGameBtn.textContent = 'Start Game';
         }
         
     } catch (err) {
@@ -723,6 +720,63 @@ async function startGame() {
             startGameBtn.disabled = false;
             startGameBtn.textContent = 'Start Game';
         }
+    }
+}
+
+// Применение состояния блокировки к карточкам
+async function applyCardsLockState(isLocked, bunkerCardData) {
+    // Находим все карточки кроме карточки ГОЛОСОВАНИЯ
+    const allFlipCards = document.querySelectorAll('.flip-card');
+    
+    allFlipCards.forEach(flipCard => {
+        // Пропускаем карточку ГОЛОСОВАНИЯ
+        const votingBlock = flipCard.querySelector('.voting-block');
+        if (votingBlock) {
+            return;
+        }
+        
+        const flipCardInner = flipCard.querySelector('.flip-card-inner');
+        if (!flipCardInner) return;
+        
+        if (isLocked) {
+            // Блокируем: переворачиваем картинкой вверх и добавляем класс блокировки
+            flipCardInner.classList.remove('flipped');
+            flipCard.classList.add('cards-locked');
+        } else {
+            // Разблокируем: переворачиваем текстом вверх и убираем класс блокировки
+            flipCardInner.classList.add('flipped');
+            flipCard.classList.remove('cards-locked');
+        }
+    });
+    
+    // Если есть данные карточки бункера, отображаем их
+    if (bunkerCardData) {
+        displayBunkerCard(bunkerCardData);
+    }
+}
+
+// Проверка и применение состояния блокировки карточек при загрузке
+async function checkAndApplyCardsLockState() {
+    try {
+        const { data: lobbyData, error } = await supabase
+            .from('lobbies')
+            .select('cards_locked, bunker_card_data, game_started')
+            .eq('lobby_id', parseInt(currentLobbyId))
+            .maybeSingle();
+        
+        if (error) {
+            console.error('Ошибка проверки состояния карточек:', error);
+            return;
+        }
+        
+        // По умолчанию карточки заблокированы (cards_locked = true или undefined)
+        const isLocked = lobbyData?.cards_locked !== false;
+        
+        // Применяем состояние
+        await applyCardsLockState(isLocked, lobbyData?.bunker_card_data);
+        
+    } catch (err) {
+        console.error('Ошибка проверки состояния карточек:', err);
     }
 }
 
@@ -2587,6 +2641,18 @@ function subscribeToBlurUpdates() {
                     console.log('✅ Голосование обновлено через realtime');
                 }
                 
+                // Обработка обновлений cards_locked (блокировка карточек)
+                if (payload.new && payload.new.cards_locked !== undefined) {
+                    const cardsLocked = payload.new.cards_locked;
+                    const bunkerCardData = payload.new.bunker_card_data;
+                    console.log('📦 Получено cards_locked через realtime:', cardsLocked);
+                    
+                    // Применяем состояние блокировки к карточкам
+                    applyCardsLockState(cardsLocked, bunkerCardData);
+                    
+                    console.log('✅ Состояние блокировки карточек обновлено через realtime');
+                }
+                
                 // Обработка обновлений bunker_card_data (карточка бункера)
                 if (payload.new && payload.new.bunker_card_data) {
                     const bunkerCardData = payload.new.bunker_card_data;
@@ -2595,39 +2661,7 @@ function subscribeToBlurUpdates() {
                     // Отображаем данные карточки бункера
                     displayBunkerCard(bunkerCardData);
                     
-                    // Разрешаем переворот карточки бункера
-                    const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
-                    if (bunkerCardFlipCard) {
-                        bunkerCardFlipCard.classList.add('game-started');
-                    }
-                    
-                    // Скрываем кнопку старта
-                    const startGameBtn = document.getElementById('startGameBtn');
-                    if (startGameBtn) {
-                        startGameBtn.style.display = 'none';
-                    }
-                    
                     console.log('✅ Карточка бункера обновлена через realtime');
-                }
-                
-                // Обработка обновлений game_started
-                if (payload.new && payload.new.game_started !== undefined) {
-                    const gameStarted = payload.new.game_started;
-                    console.log('📦 Получен game_started через realtime:', gameStarted);
-                    
-                    if (gameStarted) {
-                        // Разрешаем переворот карточки бункера
-                        const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
-                        if (bunkerCardFlipCard) {
-                            bunkerCardFlipCard.classList.add('game-started');
-                        }
-                        
-                        // Скрываем кнопку старта
-                        const startGameBtn = document.getElementById('startGameBtn');
-                        if (startGameBtn) {
-                            startGameBtn.style.display = 'none';
-                        }
-                    }
                 }
                 
                 // Обработка обновлений blur_states
@@ -2862,16 +2896,20 @@ function setupFlipCards() {
         
         const flipCard = e.target.closest('.flip-card');
         if (flipCard) {
-            // Проверяем, является ли это карточкой бункера
-            const bunkerCard = flipCard.querySelector('.bunker-card-block');
-            if (bunkerCard) {
-                // Проверяем, начата ли игра
-                const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
-                if (bunkerCardFlipCard && !bunkerCardFlipCard.classList.contains('game-started')) {
-                    // Игра не начата - блокируем переворот
-                    console.log('ℹ️ Игра еще не начата, карточка бункера заблокирована');
-                    return;
+            // Пропускаем карточку ГОЛОСОВАНИЯ - она всегда доступна
+            const votingBlock = flipCard.querySelector('.voting-block');
+            if (votingBlock) {
+                const flipCardInner = flipCard.querySelector('.flip-card-inner');
+                if (flipCardInner) {
+                    flipCardInner.classList.toggle('flipped');
                 }
+                return;
+            }
+            
+            // Проверяем, заблокирована ли карточка
+            if (flipCard.classList.contains('cards-locked')) {
+                console.log('ℹ️ Карточка заблокирована, нажмите "Start Game" для разблокировки');
+                return;
             }
             
             const flipCardInner = flipCard.querySelector('.flip-card-inner');
