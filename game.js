@@ -3017,9 +3017,12 @@ function setupFlipCards() {
                 return;
             }
             
-            // Проверяем, является ли это карточкой другого игрока (имеет data-player-id)
+            // Проверяем, является ли это карточкой текущего игрока
+            const isCurrentPlayerCard = flipCard.id === 'currentPlayerCardFlipCard';
+            
+            // Проверяем, является ли это карточкой другого игрока (имеет data-player-id, но НЕ является карточкой текущего игрока)
             const playerId = flipCard.getAttribute('data-player-id');
-            if (playerId) {
+            if (playerId && !isCurrentPlayerCard) {
                 // Это карточка другого игрока - не переворачиваем её автоматически
                 // Карточки других игроков должны оставаться перевернутыми (показывать картинку)
                 return;
