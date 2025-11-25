@@ -4,6 +4,9 @@ let currentLobbyId = null;
 let currentUserId = null;
 let blurRealtimeChannel = null;
 let playersRealtimeChannel = null;
+let heartbeatInterval = null;
+let activityCheckInterval = null;
+let inactivityTimer = null;
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', async () => {
@@ -56,7 +59,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentLobbyId = userData.lobby_id.toString();
             sessionStorage.setItem('currentLobbyId', currentLobbyId);
         } else {
-            currentLobbyId = lobbyIdStr;
+            // Проверяем, что игрок действительно в лобби (на случай если его удалили)
+            const { data: userData, error } = await supabase
+                .from('users')
+                .select('lobby_id')
+                .eq('id', currentUserId)
+                .maybeSingle();
+            
+            if (error) {
+                console.error('Ошибка проверки lobby_id:', error);
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            if (!userData || !userData.lobby_id || userData.lobby_id === 0 || userData.lobby_id.toString() !== lobbyIdStr) {
+                console.log('ℹ️ Пользователь был удален из лобби, возвращаем на главную');
+                sessionStorage.removeItem('currentLobbyId');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            currentLobbyId = userData.lobby_id.toString();
         }
         
         // Инициализируем случайное распределение цветов для игроков
@@ -97,6 +120,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Подписываемся на realtime обновления игроков
         subscribeToPlayersUpdates();
+        
+        // Запускаем heartbeat для отслеживания активности
+        startHeartbeat();
+        
+        // Запускаем проверку неактивных игроков
+        startActivityCheck();
+        
+        // Настраиваем обработчики для отслеживания закрытия страницы
+        setupInactivityHandlers();
         
     } catch (err) {
         console.error('Ошибка инициализации игры:', err);
@@ -2656,6 +2688,16 @@ async function exitFromLobby() {
             console.log('✅ lobby_id успешно установлен в 0 для пользователя:', currentUserId);
         }
         
+        // Останавливаем heartbeat и проверку активности ПЕРЕД обновлением БД
+        stopHeartbeat();
+        stopActivityCheck();
+        
+        // Отменяем таймер неактивности, если он активен
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = null;
+        }
+        
         // Небольшая задержка, чтобы событие успело отправиться через realtime
         await new Promise(resolve => setTimeout(resolve, 500));
         
@@ -2681,8 +2723,229 @@ async function exitFromLobby() {
     }
 }
 
+// Heartbeat - отправка сигнала активности
+async function sendHeartbeat() {
+    if (!currentUserId) return;
+    
+    try {
+        // Обновляем updated_at для текущего игрока
+        await supabase
+            .from('users')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', currentUserId);
+    } catch (err) {
+        console.error('Ошибка отправки heartbeat:', err);
+    }
+}
+
+// Запуск heartbeat (каждые 5 секунд)
+function startHeartbeat() {
+    // Отправляем сразу
+    sendHeartbeat();
+    
+    // Затем каждые 5 секунд
+    heartbeatInterval = setInterval(() => {
+        sendHeartbeat();
+    }, 5000);
+    
+    console.log('✅ Heartbeat запущен');
+}
+
+// Остановка heartbeat
+function stopHeartbeat() {
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+        console.log('🛑 Heartbeat остановлен');
+    }
+}
+
+// Проверка неактивных игроков и их автоматический выход
+async function checkInactivePlayers() {
+    if (!currentLobbyId) return;
+    
+    try {
+        // Получаем всех игроков в лобби
+        const { data: players, error: playersError } = await supabase
+            .from('users')
+            .select('id, name, email, updated_at')
+            .eq('lobby_id', parseInt(currentLobbyId));
+        
+        if (playersError) {
+            console.error('Ошибка проверки неактивных игроков:', playersError);
+            return;
+        }
+        
+        if (!players || players.length === 0) return;
+        
+        const now = new Date();
+        const inactiveThreshold = 30000; // 30 секунд в миллисекундах
+        
+        // Проверяем каждого игрока
+        for (const player of players) {
+            if (player.id === currentUserId) continue; // Пропускаем текущего игрока
+            
+            const lastActivity = new Date(player.updated_at);
+            const timeSinceActivity = now - lastActivity;
+            
+            // Если игрок неактивен более 30 секунд
+            if (timeSinceActivity > inactiveThreshold) {
+                console.log(`⏰ Игрок ${player.name || player.email} неактивен ${Math.floor(timeSinceActivity / 1000)} секунд, выводим из лобби`);
+                
+                // Удаляем игрока из лобби
+                await removeInactivePlayer(player.id);
+            }
+        }
+    } catch (err) {
+        console.error('Ошибка проверки неактивных игроков:', err);
+    }
+}
+
+// Удаление неактивного игрока из лобби
+async function removeInactivePlayer(playerId) {
+    if (!currentLobbyId) return;
+    
+    try {
+        // Устанавливаем lobby_id = 0
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ 
+                lobby_id: 0,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', playerId);
+        
+        if (updateError) {
+            console.error('Ошибка удаления неактивного игрока:', updateError);
+            return;
+        }
+        
+        console.log(`✅ Игрок ${playerId} удален из лобби из-за неактивности`);
+        
+        // Удаляем голоса этого игрока из голосования
+        await removePlayerVotes(playerId);
+        
+        // Обновляем список игроков и голосование для текущих игроков
+        await loadPlayersInfo();
+        await loadVoting();
+        
+        // Восстанавливаем данные для элементов, у которых blur уже снят
+        setTimeout(() => {
+            restoreUnblurredData();
+        }, 100);
+        
+    } catch (err) {
+        console.error('Ошибка удаления неактивного игрока:', err);
+    }
+}
+
+// Удаление голосов игрока из голосования
+async function removePlayerVotes(playerId) {
+    if (!currentLobbyId) return;
+    
+    try {
+        // Загружаем текущие голоса
+        const { data: lobbyData, error: fetchError } = await supabase
+            .from('lobbies')
+            .select('votes')
+            .eq('lobby_id', parseInt(currentLobbyId))
+            .maybeSingle();
+        
+        if (fetchError) {
+            console.error('Ошибка загрузки голосов:', fetchError);
+            return;
+        }
+        
+        let allVotes = {};
+        if (lobbyData && lobbyData.votes) {
+            allVotes = lobbyData.votes;
+        }
+        
+        // Удаляем голоса этого игрока (как голосующего)
+        const playerIdStr = String(playerId);
+        delete allVotes[playerIdStr];
+        delete allVotes[playerId];
+        
+        // Сохраняем обновленные голоса
+        const { error: updateError } = await supabase
+            .from('lobbies')
+            .update({ votes: allVotes })
+            .eq('lobby_id', parseInt(currentLobbyId));
+        
+        if (updateError) {
+            console.error('Ошибка удаления голосов игрока:', updateError);
+        } else {
+            console.log(`🗑️ Голоса игрока ${playerId} удалены из голосования`);
+        }
+    } catch (err) {
+        console.error('Ошибка удаления голосов игрока:', err);
+    }
+}
+
+// Запуск проверки неактивных игроков (каждые 10 секунд)
+function startActivityCheck() {
+    // Проверяем сразу
+    checkInactivePlayers();
+    
+    // Затем каждые 10 секунд
+    activityCheckInterval = setInterval(() => {
+        checkInactivePlayers();
+    }, 10000);
+    
+    console.log('✅ Проверка неактивных игроков запущена');
+}
+
+// Остановка проверки активности
+function stopActivityCheck() {
+    if (activityCheckInterval) {
+        clearInterval(activityCheckInterval);
+        activityCheckInterval = null;
+        console.log('🛑 Проверка неактивных игроков остановлена');
+    }
+}
+
+// Настройка обработчиков для отслеживания закрытия страницы
+function setupInactivityHandlers() {
+    // Обработчик beforeunload - когда страница закрывается
+    window.addEventListener('beforeunload', async () => {
+        // Отправляем последний сигнал активности
+        await sendHeartbeat();
+        
+        // Останавливаем все интервалы
+        stopHeartbeat();
+        stopActivityCheck();
+        
+        // Отписываемся от realtime обновлений
+        unsubscribeFromBlurUpdates();
+        unsubscribeFromPlayersUpdates();
+    });
+    
+    // Обработчик visibilitychange - когда вкладка становится видимой/невидимой
+    document.addEventListener('visibilitychange', async () => {
+        if (document.hidden) {
+            // Вкладка скрыта - запускаем таймер на 30 секунд
+            inactivityTimer = setTimeout(async () => {
+                console.log('⏰ Вкладка была скрыта более 30 секунд, выходим из лобби');
+                await exitFromLobby();
+            }, 30000);
+        } else {
+            // Вкладка видима - отменяем таймер и обновляем активность
+            if (inactivityTimer) {
+                clearTimeout(inactivityTimer);
+                inactivityTimer = null;
+            }
+            // Обновляем активность
+            await sendHeartbeat();
+        }
+    });
+    
+    console.log('✅ Обработчики неактивности настроены');
+}
+
 // Отписка от всех realtime обновлений при закрытии страницы
 window.addEventListener('beforeunload', () => {
+    stopHeartbeat();
+    stopActivityCheck();
     unsubscribeFromBlurUpdates();
     unsubscribeFromPlayersUpdates();
 });
