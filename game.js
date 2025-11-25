@@ -1125,6 +1125,9 @@ async function loadVoting() {
         let allVotes = {};
         if (!votesError && lobbyData && lobbyData.votes) {
             allVotes = lobbyData.votes;
+            console.log('📊 Загружены голоса из БД:', allVotes);
+        } else if (votesError) {
+            console.error('Ошибка загрузки голосов из БД:', votesError);
         }
         
         // Создаем список игроков с кружочками для всех голосующих
@@ -1133,14 +1136,32 @@ async function loadVoting() {
             const playerColor = getPlayerColor(player.id);
             
             // Находим всех, кто проголосовал за этого игрока
+            // Сравниваем ID как строки для надежности
             const votesForPlayer = Object.entries(allVotes)
-                .filter(([voterId, voteData]) => voteData && voteData.targetId === player.id)
-                .map(([voterId, voteData]) => ({
-                    voterId: voterId,
-                    voterName: voteData.voterName || 'Неизвестный',
-                    firstLetter: voteData.firstLetter || '●',
-                    voterColor: getPlayerColor(voterId)
-                }));
+                .filter(([voterId, voteData]) => {
+                    if (!voteData || !voteData.targetId) {
+                        return false;
+                    }
+                    // Нормализуем ID для сравнения (приводим к строкам)
+                    const targetIdNormalized = String(voteData.targetId).trim();
+                    const playerIdNormalized = String(player.id).trim();
+                    return targetIdNormalized === playerIdNormalized;
+                })
+                .map(([voterId, voteData]) => {
+                    // Нормализуем voterId для получения цвета
+                    const normalizedVoterId = voterId.trim();
+                    return {
+                        voterId: normalizedVoterId,
+                        voterName: voteData.voterName || 'Неизвестный',
+                        firstLetter: voteData.firstLetter || '●',
+                        voterColor: getPlayerColor(normalizedVoterId)
+                    };
+                });
+            
+            // Логирование для отладки (можно убрать в production)
+            if (votesForPlayer.length > 0) {
+                console.log(`Игрок ${playerName} (${player.id}): ${votesForPlayer.length} голосов`);
+            }
             
             // Создаем HTML для кружочков
             const circlesHTML = votesForPlayer.map(vote => {
@@ -1567,13 +1588,19 @@ async function addVote(targetPlayerId) {
         allVotes = lobbyData.votes;
     }
     
+    // Убеждаемся, что ID сохраняются как строки для консистентности
+    const voterIdStr = String(currentUserId);
+    const targetIdStr = String(targetPlayerId);
+    
     // Добавляем новый голос
-    allVotes[currentUserId] = {
-        targetId: targetPlayerId,
-        voterId: currentUserId,
+    allVotes[voterIdStr] = {
+        targetId: targetIdStr,
+        voterId: voterIdStr,
         voterName: currentUserName,
         firstLetter: firstLetter
     };
+    
+    console.log('💾 Сохраняем голос:', allVotes);
     
     // Сохраняем в БД
     const { error: updateError } = await supabase
@@ -1627,8 +1654,12 @@ async function removeVote() {
         allVotes = lobbyData.votes;
     }
     
-    // Удаляем голос текущего игрока
+    // Удаляем голос текущего игрока (пробуем и как строку, и как число)
+    const voterIdStr = String(currentUserId);
+    delete allVotes[voterIdStr];
     delete allVotes[currentUserId];
+    
+    console.log('🗑️ Удаляем голос, осталось:', allVotes);
     
     // Сохраняем в БД
     const { error: updateError } = await supabase
@@ -2018,9 +2049,10 @@ function subscribeToBlurUpdates() {
                 }
                 
                 // Обработка обновлений votes (голосования)
-                if (payload.new && payload.new.votes) {
-                    const newVotes = payload.new.votes;
+                if (payload.new && payload.new.votes !== undefined) {
+                    const newVotes = payload.new.votes || {};
                     console.log('📦 Получены votes через realtime:', newVotes);
+                    console.log('📊 Количество голосов:', Object.keys(newVotes).length);
                     
                     // Обновляем голосование
                     setTimeout(async () => {
