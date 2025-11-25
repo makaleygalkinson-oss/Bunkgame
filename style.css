@@ -747,34 +747,34 @@ body {
     font-size: 1.1rem;
 }
 
-/* Layout для блоков игры */
-.game-layout {
-    display: flex;
-    gap: 2rem;
-    margin: 3rem 0;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 0 2rem;
-    width: 100%;
-}
-
-/* Левая колонка */
-.game-left-column {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    flex: 0 0 auto;
-    width: 350px;
-    min-width: 300px;
-}
-
-/* Центральная колонка */
-.game-center-column {
-    flex: 1;
-    min-width: 300px;
-    max-width: 500px;
-    margin: 0 auto;
-}
+    /* Layout для блоков игры */
+    .game-layout {
+        display: flex;
+        gap: 2rem;
+        margin: 3rem 0;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 0 2rem;
+        width: 100%;
+    }
+    
+    /* Левая колонка */
+    .game-left-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        flex: 0 0 auto;
+        width: 350px;
+        min-width: 300px;
+    }
+    
+    /* Центральная колонка */
+    .game-center-column {
+        flex: 1;
+        min-width: 300px;
+        max-width: 500px;
+        margin: 0 auto;
+    }
 
 /* Правая колонка */
 .game-right-column {
@@ -951,10 +951,17 @@ body {
     min-height: 900px;
     margin-left: 2rem;
     width: calc(100% - 2rem);
+    position: relative;
 }
 
 .players-block .game-block-content {
     min-height: 850px;
+    position: relative;
+}
+
+/* flip-card-front для карточки текущего игрока - нужен position relative для позиционирования кнопок */
+.game-center-column .flip-card-front.players-block {
+    position: relative;
 }
 
 /* Карточки игроков */
@@ -1014,6 +1021,11 @@ body {
     justify-items: center;
 }
 
+/* ============================================
+   МЕДИА-ЗАПРОСЫ ДЛЯ РАЗНЫХ РАЗРЕШЕНИЙ
+   ============================================ */
+
+/* Список игроков - адаптивная сетка */
 @media (max-width: 2000px) {
     .players-list {
         grid-template-columns: repeat(3, 1fr);
@@ -1058,6 +1070,50 @@ body {
     transition: filter 0.3s ease;
 }
 
+/* Кнопка в нижней части карточки текущего игрока */
+.current-player-bottom-btn {
+    background: rgba(0, 255, 136, 0.2);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(0, 255, 136, 0.5);
+    border-radius: 12px;
+    padding: 12px 24px;
+    color: #00ff88;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
+    min-height: 44px;
+    width: 100%;
+    margin-top: 1rem;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.current-player-bottom-btn:hover {
+    background: rgba(0, 255, 136, 0.3);
+    border-color: rgba(0, 255, 136, 0.7);
+    box-shadow: 0 6px 25px rgba(0, 255, 136, 0.4);
+    transform: translateY(-2px);
+}
+
+.current-player-bottom-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 255, 136, 0.2);
+}
+
+/* Размер шрифта для карточек других игроков */
+.player-card-block .player-info-item {
+    font-size: 0.95rem;
+}
+
+.player-info-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .player-info-item {
     display: flex;
     align-items: center;
@@ -1070,33 +1126,108 @@ body {
     margin-right: 0.5rem;
 }
 
-.reveal-icon {
+/* Для карточки текущего игрока: убираем отступ между названием и значением, уменьшаем шрифт */
+.players-block .player-info-item {
+    position: relative;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    padding-right: 3rem; /* Место для кнопки справа */
+}
+
+.players-block .player-info-item strong {
+    margin-right: 0;
+    font-size: 0.85rem;
+}
+
+.players-block .player-info-item span {
+    margin-left: 0;
+    flex: 1;
+    font-size: 0.85rem;
+}
+
+.players-block .player-info-item .blur-toggle-btn {
+    position: absolute;
+    right: 0;
+    margin-left: 0;
+    font-size: 1rem;
+}
+
+/* Скрываем кнопки обновления в карточке текущего игрока */
+.players-block .refresh-btn {
+    display: none !important;
+}
+
+.blur-toggle-btn {
+    background: rgba(0, 255, 136, 0.2);
+    border: 1px solid rgba(0, 255, 136, 0.5);
+    border-radius: 8px;
+    color: #00ff88;
     cursor: pointer;
     font-size: 1.2rem;
+    padding: 0.3rem 0.6rem;
     margin-left: 1rem;
-    opacity: 1;
-    transition: opacity 0.3s ease, transform 0.2s ease;
+    transition: all 0.3s ease;
     user-select: none;
-    filter: none !important;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
 }
 
-.reveal-icon:hover {
-    transform: scale(1.2);
-    opacity: 0.8;
+.blur-toggle-btn:hover {
+    background: rgba(0, 255, 136, 0.3);
+    border-color: rgba(0, 255, 136, 0.7);
+    transform: scale(1.1);
 }
 
-.reveal-icon.used {
-    opacity: 0.5;
-    cursor: not-allowed;
+.blur-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+/* Предотвращаем переворот карточки при клике на кнопку */
+.player-info-item .blur-toggle-btn {
+    pointer-events: auto;
+}
+
+.refresh-btn {
+    background: rgba(0, 150, 255, 0.2);
+    border: 1px solid rgba(0, 150, 255, 0.5);
+    border-radius: 8px;
+    color: #0096ff;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0.3rem 0.6rem;
+    margin-left: 0.5rem;
+    transition: all 0.3s ease;
+    user-select: none;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.refresh-btn:hover {
+    background: rgba(0, 150, 255, 0.3);
+    border-color: rgba(0, 150, 255, 0.7);
+    transform: scale(1.1);
+}
+
+.refresh-btn:active {
+    transform: scale(0.95);
+}
+
+/* Предотвращаем переворот карточки при клике на кнопку обновления */
+.player-info-item .refresh-btn {
+    pointer-events: auto;
 }
 
 .blurred-text {
-    filter: blur(5px);
+    filter: blur(5px) !important;
     user-select: none;
     pointer-events: none;
     transition: filter 0.3s ease;
     display: inline-block;
 }
+
 
 
 .bunker-card-info {
@@ -1177,6 +1308,157 @@ body {
     color: #00ff88;
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+}
+
+.voting-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-left: 0.5rem;
+    color: inherit;
+    background-color: inherit;
+    border: inherit;
+    text-transform: uppercase;
+}
+
+/* Модальное окно голосования */
+.voting-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 1rem;
+}
+
+.voting-modal {
+    background: linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(20, 20, 20, 0.95) 100%);
+    border: 2px solid rgba(150, 150, 150, 0.3);
+    border-radius: 12px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.voting-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(150, 150, 150, 0.2);
+}
+
+.voting-modal-header h3 {
+    color: #d0d0d0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.voting-modal-close {
+    background: transparent;
+    border: none;
+    color: #d0d0d0;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.3s ease;
+}
+
+.voting-modal-close:hover {
+    color: #00ff88;
+}
+
+.voting-modal-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.voting-modal-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(50, 50, 50, 0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(150, 150, 150, 0.2);
+}
+
+.voting-modal-player-name {
+    color: #d0d0d0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.voting-modal-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.vote-add-btn,
+.vote-remove-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid;
+}
+
+.vote-add-btn {
+    background: rgba(0, 255, 136, 0.2);
+    border-color: rgba(0, 255, 136, 0.5);
+    color: #00ff88;
+}
+
+.vote-add-btn:hover:not(:disabled) {
+    background: rgba(0, 255, 136, 0.3);
+    border-color: rgba(0, 255, 136, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+}
+
+.vote-add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.vote-remove-btn {
+    background: rgba(255, 0, 0, 0.2);
+    border-color: rgba(255, 0, 0, 0.5);
+    color: #ff4444;
+}
+
+.vote-remove-btn:hover:not(:disabled) {
+    background: rgba(255, 0, 0, 0.3);
+    border-color: rgba(255, 0, 0, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+}
+
+.vote-remove-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Модальное окно лобби */
@@ -1415,7 +1697,9 @@ body {
     transition: all 0.3s ease;
 }
 
-/* Адаптивность */
+/* ============================================
+   ДЛЯ ТЕЛЕФОНОВ (до 768px)
+   ============================================ */
 @media (max-width: 768px) {
     .title {
         font-size: 3rem;
@@ -1462,6 +1746,7 @@ body {
     }
 }
 
+/* Дополнительные стили для маленьких телефонов (до 568px) */
 @media (max-width: 568px) {
     .title {
         font-size: 2rem;
@@ -1628,5 +1913,498 @@ body {
     
     .bunker-card-block .game-block-content {
         min-height: 350px;
+    }
+}
+
+/* ============================================
+   FULL HD (769px - 1920px)
+   ============================================ */
+@media (min-width: 769px) and (max-width: 1920px) {
+    /* Layout для Full HD */
+    div.game-content div.game-layout {
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+        position: relative !important;
+    }
+    
+    .game-content .game-layout {
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+        position: relative !important;
+    }
+    
+    /* Центральная колонка - убрать отступ слева и сделать шире (уменьшено на 100px для FULL HD) */
+    .game-content .game-layout .game-center-column {
+        margin: 0 auto !important;
+        flex: 0 0 auto !important;
+        flex-grow: 0 !important;
+        flex-shrink: 0 !important;
+        flex-basis: auto !important;
+        max-width: 600px !important;
+        min-width: 500px !important;
+        width: 550px !important;
+        position: relative !important;
+    }
+    
+    /* Вернуть flip-card внутри центральной колонки к исходному стилю */
+    .game-content .game-layout .game-center-column > .flip-card {
+        margin-left: 2rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    /* Уменьшаем высоту блока players-block для FULL HD еще на 100px (всего на 300px) */
+    .game-content .game-layout .game-center-column .players-block {
+        min-height: 600px !important; /* Было 900px, уменьшено на 300px */
+    }
+    
+    .game-content .game-layout .game-center-column .players-block .game-block-content {
+        min-height: 550px !important; /* Было 850px, уменьшено на 300px */
+    }
+    
+    /* Высота flip-card контейнера для FULL HD - такая же как у players-block */
+    .game-content .game-layout .game-center-column > .flip-card {
+        min-height: 600px !important; /* Такая же высота как у players-block */
+    }
+    
+    /* Обратная сторона карточки (с картинкой) для FULL HD - по параметрам карточки текущего игрока */
+    .game-content .game-layout .game-center-column .players-block .flip-card-back {
+        min-height: 600px !important; /* Такая же высота как у players-block */
+        width: 100% !important; /* Такая же ширина как у карточки */
+    }
+    
+    /* Правая колонка - ширина 550px */
+    .game-layout .game-right-column {
+        width: 550px !important;
+        min-width: 500px !important;
+        max-width: 550px !important;
+        flex: 0 0 550px !important;
+        overflow: visible !important;
+        visibility: visible !important;
+    }
+    
+    /* Блоки в правой колонке - вернуть ширину */
+    .game-layout .game-right-column > .flip-card {
+        width: 100% !important;
+        margin-left: 0 !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+        visibility: visible !important;
+    }
+    
+    /* Специфично для первого и второго flip-card */
+    .game-layout .game-right-column > .flip-card:first-child,
+    .game-layout .game-right-column > .flip-card:nth-child(2) {
+        width: 100% !important;
+        margin-left: 0 !important;
+        max-width: 100% !important;
+        visibility: visible !important;
+    }
+    
+    /* Специфично для первого и второго flip-card */
+    .game-layout .game-right-column > .flip-card:first-child,
+    .game-layout .game-right-column > .flip-card:nth-child(2) {
+        width: 100% !important;
+        margin-left: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    /* Секретная информация бункера - отступ 50px от карточки бункера */
+    /* Второй flip-card в правой колонке (секретная информация) */
+    .game-layout .game-right-column .flip-card:nth-child(2) {
+        margin-top: 50px !important;
+        position: relative;
+        z-index: 2;
+    }
+    
+    /* Первый flip-card в правой колонке (карточка бункера) */
+    .game-right-column .flip-card:first-child {
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Блок информации о лобби - увеличить отступ на 50px и убрать зеркальность */
+    .game-info-container {
+        margin-top: calc(1.5rem + 50px) !important;
+    }
+    
+    .game-info {
+        text-align: left !important;
+    }
+    
+    .game-lobby-info {
+        text-align: left !important;
+    }
+}
+
+/* ============================================
+   2K РАЗРЕШЕНИЕ МОНИТОРОВ (1921px - 2560px)
+   ============================================ */
+@media (min-width: 1921px) and (max-width: 2560px) {
+    /* Увеличение базовых размеров */
+    body {
+        font-size: 18px;
+    }
+    
+    /* Счетчик посетителей */
+    .visitor-counter {
+        top: 30px;
+        left: 30px;
+        padding: 16px 20px;
+        border-radius: 16px;
+    }
+    
+    .counter-label {
+        font-size: 1.1rem;
+    }
+    
+    .counter-number {
+        font-size: 1.5rem;
+    }
+    
+    /* Кнопки авторизации */
+    .auth-buttons {
+        top: 30px;
+        right: 30px;
+        gap: 16px;
+    }
+    
+    .auth-btn {
+        padding: 12px 28px;
+        font-size: 1.1rem;
+        border-radius: 12px;
+    }
+    
+    /* Контент главной страницы */
+    .content-wrapper {
+        padding: 4rem 3rem;
+        max-width: 1600px;
+    }
+    
+    .title {
+        font-size: 7.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .subtitle {
+        font-size: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .lobby-btn,
+    .create-lobby-btn {
+        padding: 18px 40px;
+        font-size: 1.3rem;
+        min-height: 60px;
+        border-radius: 14px;
+    }
+    
+    /* Модальные окна */
+    .modal-content {
+        padding: 2.5rem;
+        max-width: 600px;
+        border-radius: 20px;
+    }
+    
+    .modal-title {
+        font-size: 2.2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .form-group label {
+        font-size: 1.1rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .form-group input {
+        padding: 14px 18px;
+        font-size: 1.1rem;
+        border-radius: 12px;
+    }
+    
+    .submit-btn {
+        padding: 16px 40px;
+        font-size: 1.2rem;
+        border-radius: 12px;
+    }
+    
+    /* Страница игры - убрать все отступы */
+    html, body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    
+    .game-container {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        overflow-y: hidden;
+    }
+    
+    /* Убрать скролл у контента игры - скролл только на body */
+    .game-content {
+        overflow: hidden;
+    }
+    
+    /* Шапка во всю ширину без отступов */
+    .game-page-header {
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
+        left: 0;
+        right: 0;
+        top: 0;
+        position: sticky;
+        box-sizing: border-box;
+    }
+    
+    /* Контент без верхних отступов */
+    .game-content {
+        padding: 2rem;
+        padding-top: 0;
+        margin-top: 0;
+    }
+    
+    .game-title {
+        font-size: 5rem;
+        margin-bottom: 2rem;
+        margin-top: 2rem;
+    }
+    
+    .game-exit-btn {
+        padding: 14px 32px;
+        font-size: 1.2rem;
+        border-radius: 12px;
+        margin: 0;
+    }
+    
+    /* Блоки игры */
+    .game-block-header {
+        padding: 1.5rem 2rem;
+    }
+    
+    .game-block-title {
+        font-size: 1.4rem;
+    }
+    
+    .game-block-content {
+        padding: 2rem;
+        font-size: 1.1rem;
+    }
+    
+    /* Карточки игроков */
+    .player-card-info {
+        padding: 2rem;
+    }
+    
+    /* Размер шрифта для карточек других игроков */
+    .player-card-block .player-info-item {
+        font-size: 1.15rem;
+        margin-bottom: 1.3rem;
+        line-height: 1.8;
+    }
+    
+    /* Размер шрифта для карточки текущего игрока - меньше */
+    .players-block .player-info-item {
+        font-size: 1rem;
+        margin-bottom: 1.3rem;
+        line-height: 1.8;
+    }
+    
+    .player-info-item strong {
+        font-size: 1.2rem;
+    }
+    
+    /* Кнопки blur и refresh */
+    .blur-toggle-btn,
+    .refresh-btn {
+        font-size: 1.4rem;
+        padding: 0.4rem 0.8rem;
+        margin-left: 1.2rem;
+        border-radius: 10px;
+    }
+    
+    /* Блоки бункера */
+    .bunker-card-info {
+        padding: 2rem;
+        font-size: 1.1rem;
+    }
+    
+    .bunker-secret-block .game-block-content,
+    .bunker-card-block .game-block-content {
+        padding: 2rem;
+        font-size: 1.1rem;
+    }
+    
+    /* Голосование */
+    .voting-list {
+        gap: 1.2rem;
+    }
+    
+    .voting-item {
+        padding: 1.2rem 1.5rem;
+        font-size: 1.1rem;
+        border-radius: 12px;
+    }
+    
+    .vote-btn {
+        padding: 10px 24px;
+        font-size: 1.1rem;
+        border-radius: 10px;
+    }
+    
+    /* Список игроков */
+    .players-list {
+        gap: 2rem;
+    }
+    
+    .flip-card {
+        border-radius: 18px;
+    }
+    
+    /* Информация о лобби */
+    .game-info {
+        padding: 1.5rem;
+        font-size: 1.1rem;
+        border-radius: 14px;
+    }
+    
+    /* Лобби модальное окно */
+    .lobby-modal-content {
+        max-width: 900px;
+        padding: 2.5rem;
+    }
+    
+    .lobby-card {
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 1.5rem;
+    }
+    
+    .lobby-card-label {
+        font-size: 0.95rem;
+    }
+    
+    .lobby-card-value {
+        font-size: 1.3rem;
+    }
+    
+    .lobby-connect-btn {
+        padding: 14px 32px;
+        font-size: 1.2rem;
+        border-radius: 12px;
+    }
+    
+    /* Увеличение минимальных высот для больших экранов */
+    .voting-block {
+        min-height: 1000px;
+    }
+    
+    .player-card-block {
+        min-height: 1000px;
+    }
+    
+    .player-card-block .game-block-content {
+        min-height: 950px;
+    }
+    
+    .bunker-secret-block {
+        min-height: 550px;
+    }
+    
+    .bunker-secret-block .game-block-content {
+        min-height: 500px;
+    }
+    
+    .bunker-card-block {
+        min-height: 550px;
+    }
+    
+    .bunker-card-block .game-block-content {
+        min-height: 500px;
+    }
+    
+    /* Оптимизация layout для 2K экранов */
+    .game-layout {
+        gap: 3rem;
+        padding: 0 3rem;
+        justify-content: space-between;
+    }
+    
+    /* Вернуть исходные ширины для 2K */
+    .game-left-column {
+        width: 350px;
+        min-width: 300px;
+    }
+    
+    .game-center-column {
+        max-width: 550px; /* Уменьшено на 50px для 2K */
+    }
+    
+    /* Уменьшаем высоту блока players-block для 2K еще на 50px (всего на 150px) */
+    .game-center-column .players-block {
+        min-height: 750px !important; /* Было 900px, уменьшено на 150px */
+    }
+    
+    .game-center-column .players-block .game-block-content {
+        min-height: 700px !important; /* Было 850px, уменьшено на 150px */
+    }
+    
+    /* Высота flip-card контейнера для 2K - такая же как у players-block */
+    .game-center-column > .flip-card {
+        min-height: 750px !important; /* Такая же высота как у players-block */
+    }
+    
+    /* Высота обратной стороны карточки (с картинкой) для 2K */
+    .game-center-column .players-block .flip-card-back {
+        min-height: 750px !important; /* Такая же высота как у players-block */
+    }
+    
+    .game-right-column {
+        width: 500px;
+        min-width: 400px;
+    }
+    
+    /* Вернуть исходные стили для блоков в правой колонке */
+    .game-right-column .flip-card {
+        width: calc(100% + 250px) !important;
+        margin-left: -250px !important;
+    }
+    
+    /* Секретная информация бункера - отступ 70px от карточки бункера */
+    .game-right-column .flip-card:nth-child(2) {
+        margin-top: 70px !important;
+    }
+    
+    /* Блок информации о лобби - сдвинуть ниже на 70px и убрать зеркальность */
+    .game-info-container {
+        margin-top: calc(1.5rem + 70px) !important;
+    }
+    
+    .game-info {
+        text-align: left !important;
+    }
+    
+    .game-lobby-info {
+        text-align: left !important;
+    }
+    
+    /* Голосование - выравнивание по тексту слева */
+    .voting-block .game-block-content {
+        text-align: left;
+    }
+    
+    .voting-list {
+        text-align: left;
+    }
+    
+    .voting-item {
+        text-align: left;
+        justify-content: flex-start;
     }
 }

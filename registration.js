@@ -263,7 +263,14 @@ function initLoginForm() {
                 throw new Error('Неверный пароль');
             }
             
-            // Сохраняем информацию о пользователе в sessionStorage
+            // Сохраняем информацию о пользователе в localStorage (для сохранения между сессиями)
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: user.id,
+                name: user.name,
+                email: user.email
+            }));
+            
+            // Также сохраняем в sessionStorage для совместимости
             sessionStorage.setItem('currentUser', JSON.stringify({
                 id: user.id,
                 name: user.name,
@@ -312,6 +319,7 @@ function updateAuthUI(user) {
     if (loginBtn) {
         loginBtn.textContent = 'Выйти';
         loginBtn.onclick = () => {
+            localStorage.removeItem('currentUser');
             sessionStorage.removeItem('currentUser');
             location.reload();
         };
@@ -320,6 +328,7 @@ function updateAuthUI(user) {
 
 // Функция выхода
 function logout() {
+    localStorage.removeItem('currentUser');
     sessionStorage.removeItem('currentUser');
     location.reload();
 }
@@ -387,31 +396,83 @@ if (document.readyState === 'loading') {
 }
 
 // Проверка текущего пользователя при загрузке
-function checkCurrentUser() {
-    const userStr = sessionStorage.getItem('currentUser');
+async function checkCurrentUser() {
+    // Сначала проверяем localStorage (для сохранения между сессиями)
+    let userStr = localStorage.getItem('currentUser');
+    
+    // Если нет в localStorage, проверяем sessionStorage (для совместимости)
+    if (!userStr) {
+        userStr = sessionStorage.getItem('currentUser');
+    }
+    
     if (userStr) {
         try {
             const user = JSON.parse(userStr);
-            updateAuthUI(user);
+            
+            // Проверяем, что пользователь все еще существует в БД
+            const { data: dbUser, error } = await supabase
+                .from('users')
+                .select('id, name, email')
+                .eq('id', user.id)
+                .maybeSingle();
+            
+            if (error) {
+                console.error('Ошибка проверки пользователя в БД:', error);
+                // Если ошибка, но не критичная, продолжаем с сохраненными данными
+            }
+            
+            if (dbUser) {
+                // Пользователь существует, обновляем данные (на случай изменения имени)
+                const updatedUser = {
+                    id: dbUser.id,
+                    name: dbUser.name,
+                    email: dbUser.email
+                };
+                
+                // Обновляем в обоих хранилищах
+                localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                
+                updateAuthUI(updatedUser);
+                console.log('✅ Сессия восстановлена для пользователя:', updatedUser.name);
+            } else if (!error) {
+                // Пользователь не найден в БД, очищаем сессию
+                console.log('⚠️ Пользователь не найден в БД, очищаем сессию');
+                localStorage.removeItem('currentUser');
+                sessionStorage.removeItem('currentUser');
+                resetAuthUI();
+            } else {
+                // Ошибка при проверке, но используем сохраненные данные
+                updateAuthUI(user);
+            }
         } catch (err) {
             console.error('Ошибка парсинга пользователя:', err);
+            localStorage.removeItem('currentUser');
             sessionStorage.removeItem('currentUser');
+            resetAuthUI();
         }
     } else {
         // Если пользователь не авторизован, показываем кнопки регистрации и входа
-        const registerBtn = document.getElementById('registerBtn');
-        const loginBtn = document.getElementById('loginBtn');
-        
-        if (registerBtn) {
-            registerBtn.textContent = 'Register';
-            registerBtn.style.cursor = 'pointer';
-            registerBtn.style.opacity = '1';
-        }
-        
-        if (loginBtn) {
-            loginBtn.textContent = 'Login';
-            loginBtn.style.cursor = 'pointer';
-        }
+        resetAuthUI();
+    }
+}
+
+// Сброс UI авторизации
+function resetAuthUI() {
+    const registerBtn = document.getElementById('registerBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    
+    if (registerBtn) {
+        registerBtn.textContent = 'Register';
+        registerBtn.style.cursor = 'pointer';
+        registerBtn.style.opacity = '1';
+        registerBtn.onclick = null;
+    }
+    
+    if (loginBtn) {
+        loginBtn.textContent = 'Login';
+        loginBtn.style.cursor = 'pointer';
+        loginBtn.onclick = null;
     }
 }
 
@@ -420,8 +481,11 @@ async function connectToLobby(lobbyId) {
     try {
         console.log('Подключение к лобби:', lobbyId);
         
-        // Проверяем, авторизован ли пользователь
-        const userStr = sessionStorage.getItem('currentUser');
+        // Проверяем, авторизован ли пользователь (сначала localStorage, потом sessionStorage)
+        let userStr = localStorage.getItem('currentUser');
+        if (!userStr) {
+            userStr = sessionStorage.getItem('currentUser');
+        }
         if (!userStr) {
             alert('Необходимо войти в систему для подключения к лобби');
             return;
@@ -772,8 +836,11 @@ async function createLobby() {
     confirmBtn.disabled = true;
     
     try {
-        // Проверяем, авторизован ли пользователь
-        const userStr = sessionStorage.getItem('currentUser');
+        // Проверяем, авторизован ли пользователь (сначала localStorage, потом sessionStorage)
+        let userStr = localStorage.getItem('currentUser');
+        if (!userStr) {
+            userStr = sessionStorage.getItem('currentUser');
+        }
         if (!userStr) {
             throw new Error('Необходимо войти в систему для создания лобби');
         }
