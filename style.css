@@ -1329,6 +1329,23 @@ body {
     flex-shrink: 0;
 }
 
+.voting-vote-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(50, 50, 50, 0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(150, 150, 150, 0.2);
+    flex-shrink: 0;
+}
+
+.voting-voter-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 /* Модальное окно голосования */
 .voting-modal-overlay {
     position: fixed;

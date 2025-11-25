@@ -1150,9 +1150,14 @@ async function loadVoting() {
         
         console.log('📊 Всего голосов:', allVotesArray.length);
         
-        // Создаем HTML для всех кружочков (горизонтально)
-        const circlesHTML = allVotesArray.map(vote => {
-            return `<span class="voting-circle" style="color: ${vote.voterColor}; background-color: ${vote.voterColor}20; border: 2px solid ${vote.voterColor};" title="${vote.voterName} → ${vote.targetName}">${vote.firstLetter}</span>`;
+        // Создаем HTML для всех голосов (горизонтально) с никами игроков
+        const votesHTML = allVotesArray.map(vote => {
+            return `
+                <div class="voting-vote-item" style="border-color: ${vote.voterColor};">
+                    <span class="voting-circle" style="color: ${vote.voterColor}; background-color: ${vote.voterColor}20; border: 2px solid ${vote.voterColor};" title="${vote.voterName} → ${vote.targetName}">${vote.firstLetter}</span>
+                    <span class="voting-voter-name" style="color: ${vote.voterColor};">${vote.voterName}</span>
+                </div>
+            `;
         }).join('');
         
         // Если нет голосов, показываем сообщение
@@ -1165,7 +1170,7 @@ async function loadVoting() {
         } else {
             votingContent.innerHTML = `
                 <div class="voting-list">
-                    ${circlesHTML}
+                    ${votesHTML}
                 </div>
             `;
         }
