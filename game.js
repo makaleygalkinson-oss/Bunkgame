@@ -203,60 +203,37 @@ async function loadLobbyInfo() {
     }
 }
 
-// Разрешение переворота всех карточек (кроме голосования) и автоматический переворот на лицевую сторону
+// Разрешение переворота всех карточек (кроме голосования)
 function enableAllCardsFlip() {
     // Карточка бункера
     const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
     if (bunkerCardFlipCard) {
         bunkerCardFlipCard.classList.add('game-started');
-        // Переворачиваем на лицевую сторону (убираем класс flipped)
-        const flipCardInner = bunkerCardFlipCard.querySelector('.flip-card-inner');
-        if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
-        }
     }
     
     // Секретная карточка
     const bunkerSecretFlipCard = document.getElementById('bunkerSecretFlipCard');
     if (bunkerSecretFlipCard) {
         bunkerSecretFlipCard.classList.add('game-started');
-        // Переворачиваем на лицевую сторону
-        const flipCardInner = bunkerSecretFlipCard.querySelector('.flip-card-inner');
-        if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
-        }
     }
     
     // Карточка текущего игрока
     const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
     if (currentPlayerCardFlipCard) {
         currentPlayerCardFlipCard.classList.add('game-started');
-        // НЕ переворачиваем карточку текущего игрока автоматически - пользователь сам решает
-        // Только разрешаем переворот (класс game-started уже добавлен)
     }
-    
-    // Карточки других игроков (все карточки с data-player-id)
-    const otherPlayerCards = document.querySelectorAll('.flip-card[data-player-id]');
-    otherPlayerCards.forEach(card => {
-        card.classList.add('game-started');
-        // Переворачиваем на лицевую сторону
-        const flipCardInner = card.querySelector('.flip-card-inner');
-        if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
-        }
-    });
 }
 
-// Блокировка переворота всех карточек (кроме голосования) и переворот на обратную сторону (картинка)
+// Блокировка переворота всех карточек (кроме голосования) и переворот обратно
 function disableAllCardsFlip() {
     // Карточка бункера
     const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
     if (bunkerCardFlipCard) {
         bunkerCardFlipCard.classList.remove('game-started');
-        // Переворачиваем на обратную сторону (добавляем класс flipped для показа картинки)
+        // Переворачиваем обратно (убираем класс flipped)
         const flipCardInner = bunkerCardFlipCard.querySelector('.flip-card-inner');
         if (flipCardInner) {
-            flipCardInner.classList.add('flipped');
+            flipCardInner.classList.remove('flipped');
         }
     }
     
@@ -264,10 +241,10 @@ function disableAllCardsFlip() {
     const bunkerSecretFlipCard = document.getElementById('bunkerSecretFlipCard');
     if (bunkerSecretFlipCard) {
         bunkerSecretFlipCard.classList.remove('game-started');
-        // Переворачиваем на обратную сторону
+        // Переворачиваем обратно
         const flipCardInner = bunkerSecretFlipCard.querySelector('.flip-card-inner');
         if (flipCardInner) {
-            flipCardInner.classList.add('flipped');
+            flipCardInner.classList.remove('flipped');
         }
     }
     
@@ -275,23 +252,12 @@ function disableAllCardsFlip() {
     const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
     if (currentPlayerCardFlipCard) {
         currentPlayerCardFlipCard.classList.remove('game-started');
-        // Переворачиваем на обратную сторону
+        // Переворачиваем обратно
         const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
         if (flipCardInner) {
-            flipCardInner.classList.add('flipped');
+            flipCardInner.classList.remove('flipped');
         }
     }
-    
-    // Карточки других игроков (все карточки с data-player-id)
-    const otherPlayerCards = document.querySelectorAll('.flip-card[data-player-id]');
-    otherPlayerCards.forEach(card => {
-        card.classList.remove('game-started');
-        // Переворачиваем на обратную сторону
-        const flipCardInner = card.querySelector('.flip-card-inner');
-        if (flipCardInner) {
-            flipCardInner.classList.add('flipped');
-        }
-    });
 }
 
 // Обновление состояния кнопки START GAME
@@ -766,13 +732,13 @@ async function loadBunkerCard() {
         
         // Если игра не начата, показываем заглушку
         if (!lobbyData || lobbyData.game_started !== true || !lobbyData.bunker_card_data) {
-            bunkerCardContent.innerHTML = `
-                <div class="bunker-card-info">
+    bunkerCardContent.innerHTML = `
+        <div class="bunker-card-info">
                     <p style="text-align: center; color: #808080; padding: 2rem;">
                         Нажмите "Start Game" для начала игры
                     </p>
-                </div>
-            `;
+        </div>
+    `;
             return;
         }
         
@@ -1546,16 +1512,6 @@ async function loadPlayersInfo() {
         
         // Генерируем данные для карточки текущего игрока
         if (currentPlayer) {
-            // Сохраняем состояние переворота карточки перед обновлением
-            const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
-            let wasFlipped = false;
-            if (currentPlayerCardFlipCard) {
-                const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
-                if (flipCardInner) {
-                    wasFlipped = flipCardInner.classList.contains('flipped');
-                }
-            }
-            
             const currentPlayerData = generatePlayerCardData(currentPlayer.id);
             // В карточке текущего игрока НЕ должно быть blur вообще
             currentPlayerCardEl.innerHTML = `
@@ -1629,18 +1585,6 @@ async function loadPlayersInfo() {
                 });
             }
             
-            // Восстанавливаем состояние переворота карточки после обновления
-            if (currentPlayerCardFlipCard) {
-                const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
-                if (flipCardInner) {
-                    if (wasFlipped) {
-                        flipCardInner.classList.add('flipped');
-                    } else {
-                        flipCardInner.classList.remove('flipped');
-                    }
-                }
-            }
-            
             // Генерируем данные для элементов, у которых blur уже снят
             // Используем небольшую задержку, чтобы DOM успел обновиться
             setTimeout(() => {
@@ -1654,19 +1598,6 @@ async function loadPlayersInfo() {
         if (otherPlayers.length === 0) {
             playersContent.innerHTML = '';
         } else {
-            // Сохраняем состояние переворота карточек других игроков перед обновлением
-            const existingCards = document.querySelectorAll('.flip-card[data-player-id]');
-            const flipStates = {};
-            existingCards.forEach(card => {
-                const playerId = card.getAttribute('data-player-id');
-                if (playerId) {
-                    const flipCardInner = card.querySelector('.flip-card-inner');
-                    if (flipCardInner) {
-                        flipStates[playerId] = flipCardInner.classList.contains('flipped');
-                    }
-                }
-            });
-            
             const otherPlayersHTML = otherPlayers.map(player => {
                 const playerName = player.name || player.email || 'Неизвестный';
                 
@@ -1709,29 +1640,11 @@ async function loadPlayersInfo() {
             
             playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
             
-            // Восстанавливаем состояние переворота карточек других игроков после обновления
-            setTimeout(() => {
-                Object.keys(flipStates).forEach(playerId => {
-                    const card = document.querySelector(`.flip-card[data-player-id="${playerId}"]`);
-                    if (card) {
-                        const flipCardInner = card.querySelector('.flip-card-inner');
-                        if (flipCardInner) {
-                            if (flipStates[playerId]) {
-                                flipCardInner.classList.add('flipped');
-                            } else {
-                                flipCardInner.classList.remove('flipped');
-                            }
-                        }
-                    }
-                });
-            }, 50);
-            
             // Генерируем данные для элементов других игроков, у которых blur уже снят
             // Используем небольшую задержку, чтобы DOM успел обновиться
-            // Вызываем restoreUnblurredData только один раз после всех обновлений
             setTimeout(() => {
                 restoreUnblurredData();
-            }, 200);
+            }, 100);
         }
         
     } catch (err) {
@@ -1823,31 +1736,8 @@ async function loadBlurStatesFromDB() {
             
             console.log('✅ Состояния blur загружены из БД');
             
-            // Сохраняем состояние переворота карточки текущего игрока перед обновлением
-            const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
-            let wasFlipped = false;
-            if (currentPlayerCardFlipCard) {
-                const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
-                if (flipCardInner) {
-                    wasFlipped = flipCardInner.classList.contains('flipped');
-                }
-            }
-            
             // Перезагружаем карточки игроков с обновленными состояниями blur
             await loadPlayersInfo();
-            
-            // Восстанавливаем состояние переворота карточки текущего игрока после обновления
-            if (currentPlayerCardFlipCard) {
-                const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
-                if (flipCardInner) {
-                    if (wasFlipped) {
-                        flipCardInner.classList.add('flipped');
-                    } else {
-                        flipCardInner.classList.remove('flipped');
-                    }
-                }
-            }
-            
             // Восстанавливаем данные для элементов, у которых blur уже снят
             // Используем задержку, чтобы DOM успел обновиться
             setTimeout(() => {
@@ -1948,7 +1838,7 @@ async function loadVoting() {
                 <div class="voting-item">
                     <span class="voting-player-name" style="color: ${playerColor};">${playerName}</span>
                     <div class="voting-circles-container">
-                        ${circlesHTML}
+                    ${circlesHTML}
                     </div>
                 </div>
             `;
@@ -2018,21 +1908,7 @@ function setupBlurToggleButtons() {
 }
 
 // Восстановление данных для элементов, у которых blur уже снят при загрузке
-let restoreUnblurredDataTimeout = null;
 function restoreUnblurredData() {
-    // Отменяем предыдущий вызов, если он еще не выполнен
-    if (restoreUnblurredDataTimeout) {
-        clearTimeout(restoreUnblurredDataTimeout);
-    }
-    
-    // Откладываем выполнение, чтобы объединить несколько вызовов
-    restoreUnblurredDataTimeout = setTimeout(() => {
-        restoreUnblurredDataTimeout = null;
-        _restoreUnblurredData();
-    }, 150);
-}
-
-function _restoreUnblurredData() {
     console.log('🔄 Восстановление данных для элементов с снятым blur...');
     
     // Находим все элементы с data-player-id (где должны быть данные)
@@ -2103,20 +1979,6 @@ function _restoreUnblurredData() {
 
 // Генерация и отображение реальных данных при снятии blur
 function generateAndDisplayData(playerId, itemType) {
-    // Проверяем, существует ли элемент и не обновлен ли он уже
-    const item = document.querySelector(`.player-info-item[data-player-id="${playerId}"][data-item="${itemType}"]`);
-    if (!item) {
-        console.log(`⚠️ Элемент не найден: playerId=${playerId}, itemType=${itemType}`);
-        return;
-    }
-    
-    // Проверяем, не обновлен ли уже элемент (нет blur класса)
-    const span = item.querySelector('span');
-    if (span && !span.classList.contains('blurred')) {
-        // Данные уже отображены, не нужно обновлять
-        return;
-    }
-    
     // Генерируем данные для игрока
     const playerData = generatePlayerCardData(playerId);
     
@@ -2924,16 +2786,8 @@ function subscribeToBlurUpdates() {
                     const playerBlurStates = blurStates[playerId] || {};
                     Object.keys(playerBlurStates).forEach(itemType => {
                         const blurState = playerBlurStates[itemType];
-                        const blurKey = `blur_${playerId}_${itemType}`;
-                        
-                        // Проверяем, изменилось ли состояние blur
-                        const currentState = sessionStorage.getItem(blurKey);
-                        if (currentState === blurState) {
-                            // Состояние не изменилось, пропускаем обновление
-                            return;
-                        }
-                        
                         // Обновляем sessionStorage
+                        const blurKey = `blur_${playerId}_${itemType}`;
                         sessionStorage.setItem(blurKey, blurState);
                         
                         console.log(`🔄 Realtime обновление blur: playerId=${playerId}, itemType=${itemType}, blurState=${blurState}`);
@@ -3022,19 +2876,6 @@ function subscribeToPlayersUpdates() {
             },
             async (payload) => {
                 console.log('🔄 Realtime UPDATE users - полный payload:', payload);
-                
-                // Пропускаем обновления, если изменился только updated_at (heartbeat)
-                const oldData = payload.old || {};
-                const newData = payload.new || {};
-                const changedFields = Object.keys(newData).filter(key => {
-                    return oldData[key] !== newData[key] && key !== 'updated_at';
-                });
-                
-                // Если изменилось только updated_at, пропускаем обновление
-                if (changedFields.length === 0) {
-                    console.log('ℹ️ Изменился только updated_at (heartbeat), пропускаем обновление');
-                    return;
-                }
                 
                 const oldLobbyId = payload.old?.lobby_id;
                 const newLobbyId = payload.new?.lobby_id;
@@ -3176,7 +3017,7 @@ function setupFlipCards() {
                 return;
             }
             
-            // Для всех карточек (кроме голосования) проверяем статус игры
+            // Для всех остальных карточек проверяем статус игры
             // Проверяем, начата ли игра (проверяем любую из карточек)
             const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
             if (bunkerCardFlipCard && !bunkerCardFlipCard.classList.contains('game-started')) {
@@ -3185,7 +3026,6 @@ function setupFlipCards() {
                 return;
             }
             
-            // Все карточки (кроме голосования) переворачиваются, если игра начата
             const flipCardInner = flipCard.querySelector('.flip-card-inner');
             if (flipCardInner) {
                 flipCardInner.classList.toggle('flipped');
