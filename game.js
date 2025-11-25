@@ -6,6 +6,7 @@ let blurRealtimeChannel = null;
 let playersRealtimeChannel = null;
 let heartbeatInterval = null;
 let activityCheckInterval = null;
+let isExiting = false; // Флаг для предотвращения бесконечного цикла при выходе
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', async () => {
@@ -45,19 +46,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (error) {
                 console.error('Ошибка проверки lobby_id:', error);
-                window.location.href = 'index.html';
+                if (!isExiting) {
+                    window.location.href = 'index.html';
+                }
                 return;
             }
             
             if (!userData || !userData.lobby_id || userData.lobby_id === 0) {
                 console.log('ℹ️ Пользователь не в лобби, возвращаем на главную');
-                window.location.href = 'index.html';
+                if (!isExiting) {
+                    window.location.href = 'index.html';
+                }
                 return;
             }
             
             currentLobbyId = userData.lobby_id.toString();
             sessionStorage.setItem('currentLobbyId', currentLobbyId);
         } else {
+            // Проверяем, что lobby_id не равен 0
+            if (lobbyIdStr === '0' || parseInt(lobbyIdStr) === 0) {
+                console.log('ℹ️ Пользователь не в лобби (lobby_id = 0), возвращаем на главную');
+                if (!isExiting) {
+                    window.location.href = 'index.html';
+                }
+                return;
+            }
             currentLobbyId = lobbyIdStr;
         }
         
@@ -2639,12 +2652,16 @@ function subscribeToPlayersUpdates() {
                         updatedUserId: exitedPlayerId
                     });
                     
-                    // Если вышел текущий игрок - обнуляем его карточку
+                    // Если вышел текущий игрок - не обрабатываем через realtime, так как уже идет процесс выхода
                     if (exitedPlayerId === currentUserId) {
-                        const currentPlayerCardEl = document.getElementById('currentPlayerCard');
-                        if (currentPlayerCardEl) {
-                            currentPlayerCardEl.innerHTML = '<p style="color: #808080; text-align: center; padding: 2rem;">Вы вышли из лобби</p>';
-                        }
+                        console.log('ℹ️ Текущий игрок вышел, пропускаем обработку через realtime');
+                        return;
+                    }
+                    
+                    // Пропускаем обновление, если идет процесс выхода
+                    if (isExiting) {
+                        console.log('ℹ️ Идет процесс выхода, пропускаем обновление');
+                        return;
                     }
                     
                     try {
@@ -2725,6 +2742,14 @@ function setupFlipCards() {
 
 // Выход из лобби
 async function exitFromLobby() {
+    // Устанавливаем флаг выхода, чтобы предотвратить бесконечный цикл
+    if (isExiting) {
+        console.log('⚠️ Выход из лобби уже выполняется, пропускаем');
+        return;
+    }
+    
+    isExiting = true;
+    
     try {
         if (!currentUserId) {
             window.location.href = 'index.html';
@@ -2737,6 +2762,17 @@ async function exitFromLobby() {
             exitBtn.disabled = true;
             exitBtn.textContent = 'Выход...';
         }
+        
+        // Останавливаем heartbeat и проверку активности ПЕРЕД обновлением БД
+        stopHeartbeat();
+        stopActivityCheck();
+        
+        // Отписываемся от realtime обновлений ПЕРЕД обновлением БД
+        unsubscribeFromBlurUpdates();
+        unsubscribeFromPlayersUpdates();
+        
+        // Удаляем информацию о лобби из sessionStorage ПЕРЕД обновлением БД
+        sessionStorage.removeItem('currentLobbyId');
         
         // Сбрасываем lobby_id в БД (устанавливаем в 0)
         const { error: updateError } = await supabase
@@ -2753,24 +2789,13 @@ async function exitFromLobby() {
             console.log('✅ lobby_id успешно установлен в 0 для пользователя:', currentUserId);
         }
         
-        // Небольшая задержка, чтобы событие успело отправиться через realtime
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
         // Увеличиваем счетчик выходов для сброса параметра "Пол и возраст"
         const currentExitCount = parseInt(sessionStorage.getItem(`exitCount_${currentUserId}`) || '0');
         sessionStorage.setItem(`exitCount_${currentUserId}`, (currentExitCount + 1).toString());
         console.log('🔄 Счетчик выходов увеличен, параметр "Пол и возраст" будет сброшен при следующем входе');
         
-        // Отписываемся от realtime обновлений
-        unsubscribeFromBlurUpdates();
-        unsubscribeFromPlayersUpdates();
-        
-        // Останавливаем heartbeat и проверку активности
-        stopHeartbeat();
-        stopActivityCheck();
-        
-        // Удаляем информацию о лобби из sessionStorage
-        sessionStorage.removeItem('currentLobbyId');
+        // Небольшая задержка перед редиректом
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         // Возвращаемся на главную страницу
         window.location.href = 'index.html';
