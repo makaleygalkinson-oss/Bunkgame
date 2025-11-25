@@ -3028,7 +3028,16 @@ function setupFlipCards() {
                 return;
             }
             
-            // Для всех остальных карточек проверяем статус игры
+            // Карточка текущего игрока переворачивается всегда
+            if (isCurrentPlayerCard) {
+                const flipCardInner = flipCard.querySelector('.flip-card-inner');
+                if (flipCardInner) {
+                    flipCardInner.classList.toggle('flipped');
+                }
+                return;
+            }
+            
+            // Для всех остальных карточек (бункер, секрет) проверяем статус игры
             // Проверяем, начата ли игра (проверяем любую из карточек)
             const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
             if (bunkerCardFlipCard && !bunkerCardFlipCard.classList.contains('game-started')) {
