@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadBlurStatesFromDB();
         
         // Загружаем карточку бункера
-        loadBunkerCard();
+        await loadBunkerCard();
         
         // Загружаем голосование
         await loadVoting();
@@ -350,38 +350,122 @@ const CATASTROPHES = [
     }
 ];
 
+// Варианты медпункта
+const MEDPOINT_OPTIONS = [
+    'Полноценный медпункт с запасом на 5 лет',
+    'Аптечка первой помощи (минимум)',
+    'Пустая комната, можно организовать склад'
+];
+
+// Варианты комнаты механика
+const MECHANIC_ROOM_OPTIONS = [
+    'Полноценный ремонтный отсек с инструментами',
+    'Склад с запчастями, но без инструментов',
+    'Закрыта, использовать нельзя'
+];
+
+// Варианты комнаты выращивания
+const GROWING_ROOM_OPTIONS = [
+    'Гидропонная ферма (Автономное питание)',
+    'Небольшие грядки с землей (Нужен свет и вода)',
+    'Нет места для выращивания'
+];
+
+// Предметы спец. снабжения для каждой катастрофы
+const SPECIAL_SUPPLY_ITEMS = {
+    'Ядерный взрыв': ['Дозиметр', 'Йодид калия (защита от радиации)', 'Свинцовые экраны'],
+    'Глобальное потепление': ['Система кондиционирования', 'Запас пресной воды', 'Солнечные батареи'],
+    'Вирусная пандемия': ['Защитные костюмы', 'Антисептики', 'Медицинские маски'],
+    'Комета': ['Запас продовольствия на 2 года', 'Генератор', 'Система фильтрации воздуха'],
+    'Нападение инопланетян': ['Радиопередатчик', 'Оружие', 'Система маскировки'],
+    'Зомби-апокалипсис': ['Оружие ближнего боя', 'Бронежилеты', 'Система оповещения'],
+    'Солнечная вспышка': ['Механические инструменты', 'Ручные генераторы', 'Свечи и фонари'],
+    'Сверхмассивное извержение вулкана': ['Респираторы', 'Запас продовольствия', 'Система фильтрации воздуха'],
+    'Искусственный интеллект': ['Механические системы', 'Ручные инструменты', 'Бумажные носители информации'],
+    'Кибератака': ['Механические системы', 'Ручные генераторы', 'Запас топлива'],
+    'Всемирное наводнение': ['Надувные лодки', 'Водонепроницаемые контейнеры', 'Система дренажа'],
+    'Мировая война (обычная)': ['Оружие', 'Бронежилеты', 'Аптечка первой помощи'],
+    'Истощение ресурсов': ['Солнечные батареи', 'Ветрогенератор', 'Система переработки отходов'],
+    'Массовое бесплодие': ['Система искусственного оплодотворения', 'Холодильник для хранения', 'Медицинское оборудование'],
+    'Кризис пресной воды': ['Система фильтрации воды', 'Запас воды на 1 год', 'Опреснитель'],
+    'Химическая атака': ['Защитные костюмы', 'Респираторы', 'Система фильтрации воздуха'],
+    'Гигантский озоновый провал': ['Солнцезащитные кремы', 'Защитная одежда', 'УФ-фильтры для окон'],
+    'Восстание роботов': ['ЭМИ-генератор', 'Механические ловушки', 'Оружие'],
+    'Биологическое оружие': ['Защитные костюмы', 'Антибиотики', 'Система изоляции'],
+    'Смещение полюсов Земли': ['Теплоизоляция', 'Генератор', 'Запас топлива'],
+    'Пылевая буря (глобальная)': ['Респираторы', 'Система фильтрации воздуха', 'Запас воды'],
+    'Падение метеорита': ['Запас продовольствия', 'Генератор', 'Система фильтрации воздуха'],
+    'Загрязнение воздуха': ['Респираторы', 'Система фильтрации воздуха', 'Запас кислородных баллонов'],
+    'Гигантские насекомые': ['Инсектициды', 'Защитные сетки', 'Оружие'],
+    'Генетическая мутация': ['Медицинское оборудование', 'Антибиотики', 'Система изоляции'],
+    'Перенаселение': ['Запас продовольствия', 'Система переработки отходов', 'Оружие для защиты'],
+    'Электромагнитный импульс (ЭМИ)': ['Механические инструменты', 'Ручные генераторы', 'Свечи и фонари'],
+    'Полное затмение Солнца': ['Генератор', 'Запас топлива', 'Система освещения'],
+    'Сингулярность (технологическая)': ['Механические системы', 'Ручные инструменты', 'Бумажные носители'],
+    'Постоянная зима': ['Теплоизоляция', 'Генератор', 'Запас топлива']
+};
+
+// Функция для выбора случайных предметов из списка
+function getRandomItems(items, count) {
+    const shuffled = [...items].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, Math.min(count, items.length));
+}
+
 // Загрузка карточки бункера
-function loadBunkerCard() {
+async function loadBunkerCard() {
     const bunkerCardContent = document.getElementById('bunkerCardContent');
     if (!bunkerCardContent) return;
     
-    // Выбираем случайную катастрофу
-    const randomCatastrophe = CATASTROPHES[Math.floor(Math.random() * CATASTROPHES.length)];
-    
-    // Генерируем срок жизни в бункере на основе диапазона катастрофы
-    const lifetimeData = generateLifetime(randomCatastrophe.lifetimeRange);
-    const lifetimeDisplay = `${lifetimeData.value} ${lifetimeData.unit}`;
-    
-    // Генерируем рандомные значения для остальных параметров карточки бункера
-    const capacity = Math.floor(Math.random() * 100) + 1;
-    const medpoint = Math.floor(Math.random() * 100) + 1;
-    const mechanicRoom = Math.floor(Math.random() * 100) + 1;
-    const growingRoom = Math.floor(Math.random() * 100) + 1;
-    const specialSupply = Math.floor(Math.random() * 100) + 1;
-    
-    bunkerCardContent.innerHTML = `
-        <div class="bunker-card-info">
-            <div class="bunker-info-item"><strong>Катастрофа:</strong> ${randomCatastrophe.name}</div>
-            <div class="bunker-info-item"><strong>Описание катастрофы:</strong> ${randomCatastrophe.description}</div>
-            <div class="bunker-info-item"><strong>Срок жизни в бункере:</strong> ${lifetimeDisplay}</div>
-            <div class="bunker-info-item"><strong>Условия Бункера:</strong> (вместимость: ${capacity} человек)</div>
-            <div class="bunker-info-item"><strong>Оснащение бункера:</strong></div>
-            <div class="bunker-info-subitem">Медпункт: ${medpoint}</div>
-            <div class="bunker-info-subitem">Комната механика: ${mechanicRoom}</div>
-            <div class="bunker-info-subitem">Комната выращивания: ${growingRoom}</div>
-            <div class="bunker-info-item"><strong>Спец.Снабжение:</strong> ${specialSupply}</div>
-        </div>
-    `;
+    try {
+        // Получаем список игроков в лобби для расчета вместимости
+        const { data: players, error: playersError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('lobby_id', parseInt(currentLobbyId));
+        
+        if (playersError) {
+            console.error('Ошибка загрузки игроков для карточки бункера:', playersError);
+        }
+        
+        // Рассчитываем вместимость: количество игроков / 2, округление вниз
+        const playerCount = players ? players.length : 0;
+        const capacity = Math.floor(playerCount / 2);
+        
+        // Выбираем случайную катастрофу
+        const randomCatastrophe = CATASTROPHES[Math.floor(Math.random() * CATASTROPHES.length)];
+        
+        // Генерируем срок жизни в бункере на основе диапазона катастрофы
+        const lifetimeData = generateLifetime(randomCatastrophe.lifetimeRange);
+        const lifetimeDisplay = `${lifetimeData.value} ${lifetimeData.unit}`;
+        
+        // Выбираем случайные варианты для оснащения
+        const medpoint = MEDPOINT_OPTIONS[Math.floor(Math.random() * MEDPOINT_OPTIONS.length)];
+        const mechanicRoom = MECHANIC_ROOM_OPTIONS[Math.floor(Math.random() * MECHANIC_ROOM_OPTIONS.length)];
+        const growingRoom = GROWING_ROOM_OPTIONS[Math.floor(Math.random() * GROWING_ROOM_OPTIONS.length)];
+        
+        // Получаем предметы спец. снабжения для данной катастрофы
+        const supplyItems = SPECIAL_SUPPLY_ITEMS[randomCatastrophe.name] || ['Запас продовольствия', 'Вода', 'Медицинские принадлежности'];
+        const specialSupplyCount = Math.floor(Math.random() * 2) + 2; // 2 или 3 предмета
+        const selectedSupplies = getRandomItems(supplyItems, specialSupplyCount);
+        const specialSupply = selectedSupplies.join(', ');
+        
+        bunkerCardContent.innerHTML = `
+            <div class="bunker-card-info">
+                <div class="bunker-info-item"><strong>Катастрофа:</strong> ${randomCatastrophe.name}</div>
+                <div class="bunker-info-item"><strong>Описание катастрофы:</strong> ${randomCatastrophe.description}</div>
+                <div class="bunker-info-item"><strong>Срок жизни в бункере:</strong> ${lifetimeDisplay}</div>
+                <div class="bunker-info-item"><strong>Условия Бункера:</strong> (вместимость: ${capacity} человек)</div>
+                <div class="bunker-info-item"><strong>Оснащение бункера:</strong></div>
+                <div class="bunker-info-subitem">Медпункт: ${medpoint}</div>
+                <div class="bunker-info-subitem">Комната механика: ${mechanicRoom}</div>
+                <div class="bunker-info-subitem">Комната выращивания: ${growingRoom}</div>
+                <div class="bunker-info-item"><strong>Спец.Снабжение:</strong> ${specialSupply}</div>
+            </div>
+        `;
+    } catch (err) {
+        console.error('Ошибка загрузки карточки бункера:', err);
+        bunkerCardContent.innerHTML = '<p class="game-error">Ошибка загрузки карточки бункера</p>';
+    }
 }
 
 // Инициализация состояния blur для всех пунктов игрока (если еще не установлено)
