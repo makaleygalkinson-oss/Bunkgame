@@ -794,43 +794,19 @@ async function checkAndApplyCardsLockState() {
 }
 
 // Инициализация состояния blur для всех пунктов игрока (если еще не установлено)
-function initializeBlurStates(playerId) {
-    const itemTypes = ['genderAge', 'profession', 'health', 'hobby', 'phobia', 'fact1', 'fact2', 'action1', 'action2'];
-    
-    itemTypes.forEach(itemType => {
-        const blurKey = `blur_${playerId}_${itemType}`;
-        // Если состояние не установлено, устанавливаем по умолчанию 1 (заблюрено)
-        if (sessionStorage.getItem(blurKey) === null) {
-            sessionStorage.setItem(blurKey, '1');
-        }
-    });
-}
-
-// Инициализация состояния blur для всех пунктов игрока (если еще не установлено)
-function initializeBlurStates(playerId) {
-    const itemTypes = ['genderAge', 'profession', 'health', 'hobby', 'phobia', 'fact1', 'fact2', 'action1', 'action2'];
-    
-    itemTypes.forEach(itemType => {
-        const blurKey = `blur_${playerId}_${itemType}`;
-        // Если состояние не установлено, устанавливаем по умолчанию 1 (заблюрено)
-        if (sessionStorage.getItem(blurKey) === null) {
-            sessionStorage.setItem(blurKey, '1');
-        }
-    });
+// Теперь инициализация происходит автоматически при получении из БД (возвращает '1' по умолчанию)
+async function initializeBlurStates(playerId) {
+    // Функция больше не нужна, так как getBlurStateFromDB возвращает '1' по умолчанию
+    // Оставляем для совместимости, но ничего не делаем
+    return;
 }
 
 // Генерация HTML для пункта информации игрока с учетом состояния blur
 // Теперь в DOM хранятся только placeholder'ы, реальные данные генерируются при снятии blur
-function generatePlayerInfoItem(itemType, label, value, playerId) {
-    // Получаем состояние blur для этого пункта (по умолчанию 1 - заблюрено)
-    const blurKey = `blur_${playerId}_${itemType}`;
-    const blurState = sessionStorage.getItem(blurKey);
-    const isBlurred = blurState === null || blurState === '1' || blurState === 'true';
-    
-    // Если состояние не установлено, устанавливаем по умолчанию 1 (заблюрено)
-    if (blurState === null) {
-        sessionStorage.setItem(blurKey, '1');
-    }
+async function generatePlayerInfoItem(itemType, label, value, playerId) {
+    // Получаем состояние blur из БД (по умолчанию 1 - заблюрено)
+    const blurState = await getBlurStateFromDB(playerId, itemType);
+    const isBlurred = blurState === '1' || blurState === 'true' || blurState === null;
     
     // Если заблюрено - показываем placeholder вместо реальных данных
     // playerId уже хранится в data-player-id, это и есть seed для генерации
@@ -1522,11 +1498,8 @@ async function loadPlayersInfo() {
         if (otherPlayers.length === 0) {
             playersContent.innerHTML = '';
         } else {
-            const otherPlayersHTML = otherPlayers.map(player => {
+            const otherPlayersHTMLPromises = otherPlayers.map(async player => {
                 const playerName = player.name || player.email || 'Неизвестный';
-                
-                // Инициализируем состояние blur для всех пунктов этого игрока
-                initializeBlurStates(player.id);
                 
                 // Генерируем стабильные значения для карточки игрока на основе его ID
                 const playerData = generatePlayerCardData(player.id);
@@ -1535,6 +1508,16 @@ async function loadPlayersInfo() {
                 // Это нужно для того, чтобы при клике на кнопку в карточке текущего игрока
                 // можно было найти и обновить элементы в карточках других игроков
                 // player.id - это ID игрока, чья карточка отображается в этой карточке
+                const genderAgeHTML = await generatePlayerInfoItem('genderAge', 'Пол и возраст', playerData.genderAge, player.id);
+                const professionHTML = await generatePlayerInfoItem('profession', 'Профессия', playerData.profession, player.id);
+                const healthHTML = await generatePlayerInfoItem('health', 'Состояние здоровья', playerData.health, player.id);
+                const hobbyHTML = await generatePlayerInfoItem('hobby', 'Хобби', playerData.hobby, player.id);
+                const phobiaHTML = await generatePlayerInfoItem('phobia', 'Фобия', playerData.phobia, player.id);
+                const fact1HTML = await generatePlayerInfoItem('fact1', 'Факт №1', playerData.fact1, player.id);
+                const fact2HTML = await generatePlayerInfoItem('fact2', 'Факт №2', playerData.fact2, player.id);
+                const action1HTML = await generatePlayerInfoItem('action1', 'Карточка действия №1', playerData.action1, player.id);
+                const action2HTML = await generatePlayerInfoItem('action2', 'Карточка действия №2', playerData.action2, player.id);
+                
                 return `
                     <div class="flip-card player-card-flip" style="min-height: 900px; width: 468px; flex-shrink: 0;" data-player-id="${player.id}">
                         <div class="flip-card-inner">
@@ -1543,15 +1526,15 @@ async function loadPlayersInfo() {
                                     <h2 class="game-block-title">${playerName}</h2>
                                 </div>
                                 <div class="game-block-content player-card-info">
-                                    ${generatePlayerInfoItem('genderAge', 'Пол и возраст', playerData.genderAge, player.id)}
-                                    ${generatePlayerInfoItem('profession', 'Профессия', playerData.profession, player.id)}
-                                    ${generatePlayerInfoItem('health', 'Состояние здоровья', playerData.health, player.id)}
-                                    ${generatePlayerInfoItem('hobby', 'Хобби', playerData.hobby, player.id)}
-                                    ${generatePlayerInfoItem('phobia', 'Фобия', playerData.phobia, player.id)}
-                                    ${generatePlayerInfoItem('fact1', 'Факт №1', playerData.fact1, player.id)}
-                                    ${generatePlayerInfoItem('fact2', 'Факт №2', playerData.fact2, player.id)}
-                                    ${generatePlayerInfoItem('action1', 'Карточка действия №1', playerData.action1, player.id)}
-                                    ${generatePlayerInfoItem('action2', 'Карточка действия №2', playerData.action2, player.id)}
+                                    ${genderAgeHTML}
+                                    ${professionHTML}
+                                    ${healthHTML}
+                                    ${hobbyHTML}
+                                    ${phobiaHTML}
+                                    ${fact1HTML}
+                                    ${fact2HTML}
+                                    ${action1HTML}
+                                    ${action2HTML}
                                 </div>
                             </div>
                             <div class="flip-card-back">
@@ -1560,7 +1543,9 @@ async function loadPlayersInfo() {
                         </div>
                     </div>
                 `;
-            }).join('');
+            });
+            
+            const otherPlayersHTML = (await Promise.all(otherPlayersHTMLPromises)).join('');
             
             playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
             
@@ -1601,6 +1586,53 @@ async function loadPlayersInfo() {
         console.error('Ошибка загрузки информации о игроках:', err);
         currentPlayerCardEl.innerHTML = '<p class="game-error">Ошибка загрузки информации</p>';
     }
+}
+
+// Кэш blur_states в памяти для быстрого доступа
+let blurStatesCache = null;
+
+// Получение blur состояния из БД (с кэшированием)
+async function getBlurStateFromDB(playerId, itemType) {
+    try {
+        if (!currentLobbyId) {
+            // Если нет лобби, возвращаем по умолчанию заблюрено
+            return '1';
+        }
+        
+        // Если кэш не загружен, загружаем его
+        if (blurStatesCache === null) {
+            const { data: lobbyData, error } = await supabase
+                .from('lobbies')
+                .select('blur_states')
+                .eq('lobby_id', parseInt(currentLobbyId))
+                .maybeSingle();
+            
+            if (error) {
+                console.error('Ошибка загрузки blur_states:', error);
+                // По умолчанию заблюрено
+                return '1';
+            }
+            
+            blurStatesCache = lobbyData?.blur_states || {};
+        }
+        
+        // Получаем состояние из кэша
+        const playerBlurStates = blurStatesCache[playerId] || {};
+        const blurState = playerBlurStates[itemType];
+        
+        // Если состояние не установлено, возвращаем по умолчанию заблюрено
+        return blurState || '1';
+        
+    } catch (err) {
+        console.error('Ошибка получения blur состояния:', err);
+        // По умолчанию заблюрено
+        return '1';
+    }
+}
+
+// Обновление кэша blur_states
+function updateBlurStatesCache(blurStates) {
+    blurStatesCache = blurStates || {};
 }
 
 // Загрузка состояния blur из БД
@@ -1674,15 +1706,8 @@ async function loadBlurStatesFromDB() {
         if (lobbyData && lobbyData.blur_states) {
             const blurStates = lobbyData.blur_states;
             
-            // Загружаем состояния blur в sessionStorage
-            Object.keys(blurStates).forEach(playerId => {
-                const playerBlurStates = blurStates[playerId] || {};
-                Object.keys(playerBlurStates).forEach(itemType => {
-                    const blurState = playerBlurStates[itemType];
-                    const blurKey = `blur_${playerId}_${itemType}`;
-                    sessionStorage.setItem(blurKey, blurState);
-                });
-            });
+            // Обновляем кэш
+            updateBlurStatesCache(blurStates);
             
             console.log('✅ Состояния blur загружены из БД');
             
@@ -1693,7 +1718,10 @@ async function loadBlurStatesFromDB() {
             setTimeout(() => {
                 restoreUnblurredData();
             }, 150);
-            }
+        } else {
+            // Если blur_states нет, инициализируем пустой кэш
+            updateBlurStatesCache({});
+        }
         } catch (dbError) {
             // Если ошибка БД, просто используем sessionStorage
             console.log('ℹ️ Ошибка работы с БД, используем только sessionStorage:', dbError.message);
@@ -1828,19 +1856,15 @@ function setupBlurToggleButtons() {
             return;
         }
         
-        // Получаем текущее состояние blur
-        const blurKey = `blur_${playerId}_${itemType}`;
-        const currentState = sessionStorage.getItem(blurKey);
+        // Получаем текущее состояние blur из БД
+        const currentState = await getBlurStateFromDB(playerId, itemType);
         const newState = (currentState === '1' || currentState === null) ? '0' : '1';
         
         console.log('🔄 Переключение blur:', itemType, 'для игрока:', playerId);
         console.log('  - текущее состояние:', currentState || '1 (по умолчанию)');
         console.log('  - новое состояние:', newState);
         
-        // Сохраняем новое состояние в sessionStorage
-        sessionStorage.setItem(blurKey, newState);
-        
-        // Сохраняем в Supabase для синхронизации (если есть колонка)
+        // Сохраняем в Supabase
         await saveBlurState(playerId, itemType, newState);
         
         // Обновляем визуальное отображение blur на карточках других игроков
@@ -1851,14 +1875,14 @@ function setupBlurToggleButtons() {
             generateAndDisplayData(playerId, itemType);
         }
         
-        console.log('✅ Состояние blur обновлено:', blurKey, '=', newState);
+        console.log('✅ Состояние blur обновлено:', `blur_${playerId}_${itemType}`, '=', newState);
         
         return false; // Дополнительная защита от всплытия события
     }, true); // Используем capture phase для более раннего перехвата
 }
 
 // Восстановление данных для элементов, у которых blur уже снят при загрузке
-function restoreUnblurredData() {
+async function restoreUnblurredData() {
     console.log('🔄 Восстановление данных для элементов с снятым blur...');
     
     // Находим все элементы с data-player-id (где должны быть данные)
@@ -1876,7 +1900,8 @@ function restoreUnblurredData() {
     const processed = new Set();
     let restoredCount = 0;
     
-    allItems.forEach(item => {
+    // Используем Promise.all для параллельной обработки
+    const promises = Array.from(allItems).map(async item => {
         // Пропускаем элементы из карточки текущего игрока (там данные уже реальные)
         if (currentPlayerCardEl && currentPlayerCardEl.contains(item)) {
             return;
@@ -1898,18 +1923,10 @@ function restoreUnblurredData() {
         
         processed.add(key);
         
-        const blurKey = `blur_${playerId}_${itemType}`;
-        let blurState = sessionStorage.getItem(blurKey);
+        // Получаем состояние blur из БД
+        const blurState = await getBlurStateFromDB(playerId, itemType);
         
-        // Если состояние не установлено, проверяем, может быть оно в другом формате
-        if (blurState === null) {
-            // Проверяем все возможные варианты ключей
-            const altKey1 = `blur_${playerId}_${itemType}`;
-            const altKey2 = `blur_${itemType}_${playerId}`;
-            blurState = sessionStorage.getItem(altKey1) || sessionStorage.getItem(altKey2);
-        }
-        
-        console.log(`  - проверка: playerId=${playerId}, itemType=${itemType}, blurState=${blurState || 'null (по умолчанию заблюрено)'}, blurKey=${blurKey}`);
+        console.log(`  - проверка: playerId=${playerId}, itemType=${itemType}, blurState=${blurState || 'null (по умолчанию заблюрено)'}`);
         
         // Если blur снят (состояние '0'), генерируем данные
         if (blurState === '0' || blurState === 0) {
@@ -1923,6 +1940,8 @@ function restoreUnblurredData() {
             console.log(`  - пропуск: blurState=${blurState} (не равно '0')`);
         }
     });
+    
+    await Promise.all(promises);
     
     console.log(`✅ Восстановление данных завершено. Обработано: ${processed.size} элементов, восстановлено: ${restoredCount}`);
 }
@@ -2308,16 +2327,11 @@ async function removeVote() {
 async function saveBlurState(playerId, itemType, blurState) {
     try {
         if (!currentLobbyId) {
-            console.log('Нет currentLobbyId, сохраняем только в sessionStorage');
+            console.log('Нет currentLobbyId, не можем сохранить blur');
             return;
         }
         
-        // Сохраняем в sessionStorage
-        const blurKey = `blur_${playerId}_${itemType}`;
-        sessionStorage.setItem(blurKey, blurState);
-        console.log('💾 Состояние blur сохранено в sessionStorage:', blurKey, '=', blurState);
-        
-        // Пытаемся сохранить в БД
+        // Сохраняем в БД
         try {
             console.log('🔄 Попытка сохранить в БД...');
             console.log('   currentLobbyId:', currentLobbyId);
@@ -2390,6 +2404,9 @@ async function saveBlurState(playerId, itemType, blurState) {
                 blurStates[playerId] = {};
             }
             blurStates[playerId][itemType] = blurState;
+            
+            // Обновляем кэш
+            updateBlurStatesCache(blurStates);
             
             console.log('📝 Обновленное состояние blur_states:', JSON.stringify(blurStates, null, 2));
             
@@ -2718,14 +2735,14 @@ function subscribeToBlurUpdates() {
                 const blurStates = payload.new.blur_states || {};
                 console.log('📦 Получены blur_states через realtime:', blurStates);
                 
+                // Обновляем кэш
+                updateBlurStatesCache(blurStates);
+                
                 // Обновляем все карточки игроков
                 Object.keys(blurStates).forEach(playerId => {
                     const playerBlurStates = blurStates[playerId] || {};
                     Object.keys(playerBlurStates).forEach(itemType => {
                         const blurState = playerBlurStates[itemType];
-                        // Обновляем sessionStorage
-                        const blurKey = `blur_${playerId}_${itemType}`;
-                        sessionStorage.setItem(blurKey, blurState);
                         
                         console.log(`🔄 Realtime обновление blur: playerId=${playerId}, itemType=${itemType}, blurState=${blurState}`);
                         
