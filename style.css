@@ -2065,6 +2065,28 @@ body {
         min-height: 500px !important; /* Увеличено на 50px для FULL HD */
     }
     
+    /* Уменьшение размера текста в карточке бункера для FULL HD */
+    .game-layout .game-right-column .bunker-card-block .bunker-card-info {
+        padding: 1rem;
+    }
+    
+    .game-layout .game-right-column .bunker-card-block .bunker-info-item {
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin-bottom: 0.8rem;
+    }
+    
+    .game-layout .game-right-column .bunker-card-block .bunker-info-item strong {
+        font-size: 0.85rem;
+    }
+    
+    .game-layout .game-right-column .bunker-card-block .bunker-info-subitem {
+        font-size: 0.8rem;
+        line-height: 1.5;
+        margin-bottom: 0.6rem;
+        margin-left: 1.2rem;
+    }
+    
     /* Специфично для первого и второго flip-card */
     .game-layout .game-right-column > .flip-card:first-child,
     .game-layout .game-right-column > .flip-card:nth-child(2) {
