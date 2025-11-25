@@ -1106,6 +1106,11 @@ body {
     }
 }
 
+.player-card-static {
+    cursor: default;
+    pointer-events: auto;
+}
+
 .player-card-block {
     min-height: 900px;
     margin: 0;
