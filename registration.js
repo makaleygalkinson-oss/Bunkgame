@@ -700,10 +700,17 @@ async function loadLobbyData() {
     try {
         lobbyContent.innerHTML = '<p class="lobby-loading">Загрузка лобби...</p>';
         
+        // Получаем текущего пользователя
+        let userStr = localStorage.getItem('currentUser');
+        if (!userStr) {
+            userStr = sessionStorage.getItem('currentUser');
+        }
+        const currentUser = userStr ? JSON.parse(userStr) : null;
+        
         // Получаем все лобби из базы данных
         const { data: lobbies, error } = await supabase
             .from('lobbies')
-            .select('lobby_id, creator_name, active_role, created_at')
+            .select('lobby_id, creator_id, creator_name, active_role, created_at')
             .order('created_at', { ascending: false });
         
         if (error) {
@@ -754,6 +761,9 @@ async function loadLobbyData() {
             
             const roleName = roleNames[lobby.active_role] || lobby.active_role;
             
+            // Проверяем, является ли текущий пользователь создателем лобби
+            const isCreator = currentUser && currentUser.id && lobby.creator_id === currentUser.id;
+            
             lobbyCard.innerHTML = `
                 <div class="lobby-card-header">
                     <div class="lobby-card-header-item">
@@ -771,6 +781,7 @@ async function loadLobbyData() {
                 </div>
                 <div class="lobby-card-actions">
                     <button class="lobby-connect-btn" data-lobby-id="${lobby.lobby_id}">CONNECT</button>
+                    ${isCreator ? `<button class="lobby-delete-btn" data-lobby-id="${lobby.lobby_id}">DELETE LOBBY</button>` : ''}
                 </div>
             `;
             
@@ -782,6 +793,16 @@ async function loadLobbyData() {
                 });
             }
             
+            // Добавляем обработчик для кнопки DELETE LOBBY (только для создателя)
+            if (isCreator) {
+                const deleteBtn = lobbyCard.querySelector('.lobby-delete-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', async () => {
+                        await deleteLobby(lobby.lobby_id);
+                    });
+                }
+            }
+            
             lobbyContent.appendChild(lobbyCard);
         });
         
@@ -791,6 +812,80 @@ async function loadLobbyData() {
         if (lobbyContent) {
             lobbyContent.innerHTML = '<p class="lobby-error">Ошибка загрузки лобби</p>';
         }
+    }
+}
+
+// Удаление лобби
+async function deleteLobby(lobbyId) {
+    try {
+        // Подтверждение удаления
+        if (!confirm('Вы уверены, что хотите удалить это лобби? Все игроки будут выброшены из лобби.')) {
+            return;
+        }
+        
+        // Проверяем, авторизован ли пользователь
+        let userStr = localStorage.getItem('currentUser');
+        if (!userStr) {
+            userStr = sessionStorage.getItem('currentUser');
+        }
+        if (!userStr) {
+            alert('Необходимо войти в систему для удаления лобби');
+            return;
+        }
+        
+        const user = JSON.parse(userStr);
+        
+        // Проверяем, что пользователь является создателем лобби
+        const { data: lobbyData, error: lobbyError } = await supabase
+            .from('lobbies')
+            .select('creator_id')
+            .eq('lobby_id', parseInt(lobbyId))
+            .maybeSingle();
+        
+        if (lobbyError) {
+            console.error('Ошибка проверки создателя лобби:', lobbyError);
+            alert('Ошибка проверки прав доступа');
+            return;
+        }
+        
+        if (!lobbyData || lobbyData.creator_id !== user.id) {
+            alert('Вы не являетесь создателем этого лобби');
+            return;
+        }
+        
+        // Обнуляем lobby_id у всех игроков в этом лобби
+        const { error: usersError } = await supabase
+            .from('users')
+            .update({ lobby_id: 0 })
+            .eq('lobby_id', parseInt(lobbyId));
+        
+        if (usersError) {
+            console.error('Ошибка обнуления lobby_id у игроков:', usersError);
+            alert('Ошибка при удалении игроков из лобби');
+            return;
+        }
+        
+        // Удаляем лобби из базы данных
+        const { error: deleteError } = await supabase
+            .from('lobbies')
+            .delete()
+            .eq('lobby_id', parseInt(lobbyId));
+        
+        if (deleteError) {
+            console.error('Ошибка удаления лобби:', deleteError);
+            alert('Ошибка удаления лобби');
+            return;
+        }
+        
+        console.log('✅ Лобби успешно удалено:', lobbyId);
+        alert('Лобби успешно удалено');
+        
+        // Обновляем список лобби
+        await loadLobbyData();
+        
+    } catch (err) {
+        console.error('Ошибка удаления лобби:', err);
+        alert('Ошибка удаления лобби. Попробуйте еще раз.');
     }
 }
 
