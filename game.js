@@ -203,25 +203,51 @@ async function loadLobbyInfo() {
     }
 }
 
-// Разрешение переворота всех карточек (кроме голосования)
+// Разрешение переворота всех карточек (кроме голосования) и автоматический переворот на лицевую сторону
 function enableAllCardsFlip() {
     // Карточка бункера
     const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
     if (bunkerCardFlipCard) {
         bunkerCardFlipCard.classList.add('game-started');
+        // Переворачиваем на лицевую сторону (убираем класс flipped)
+        const flipCardInner = bunkerCardFlipCard.querySelector('.flip-card-inner');
+        if (flipCardInner) {
+            flipCardInner.classList.remove('flipped');
+        }
     }
     
     // Секретная карточка
     const bunkerSecretFlipCard = document.getElementById('bunkerSecretFlipCard');
     if (bunkerSecretFlipCard) {
         bunkerSecretFlipCard.classList.add('game-started');
+        // Переворачиваем на лицевую сторону
+        const flipCardInner = bunkerSecretFlipCard.querySelector('.flip-card-inner');
+        if (flipCardInner) {
+            flipCardInner.classList.remove('flipped');
+        }
     }
     
     // Карточка текущего игрока
     const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
     if (currentPlayerCardFlipCard) {
         currentPlayerCardFlipCard.classList.add('game-started');
+        // Переворачиваем на лицевую сторону
+        const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
+        if (flipCardInner) {
+            flipCardInner.classList.remove('flipped');
+        }
     }
+    
+    // Карточки других игроков (все карточки с data-player-id)
+    const otherPlayerCards = document.querySelectorAll('.flip-card[data-player-id]');
+    otherPlayerCards.forEach(card => {
+        card.classList.add('game-started');
+        // Переворачиваем на лицевую сторону
+        const flipCardInner = card.querySelector('.flip-card-inner');
+        if (flipCardInner) {
+            flipCardInner.classList.remove('flipped');
+        }
+    });
 }
 
 // Блокировка переворота всех карточек (кроме голосования) и переворот на обратную сторону (картинка)
@@ -258,6 +284,17 @@ function disableAllCardsFlip() {
             flipCardInner.classList.add('flipped');
         }
     }
+    
+    // Карточки других игроков (все карточки с data-player-id)
+    const otherPlayerCards = document.querySelectorAll('.flip-card[data-player-id]');
+    otherPlayerCards.forEach(card => {
+        card.classList.remove('game-started');
+        // Переворачиваем на обратную сторону
+        const flipCardInner = card.querySelector('.flip-card-inner');
+        if (flipCardInner) {
+            flipCardInner.classList.add('flipped');
+        }
+    });
 }
 
 // Обновление состояния кнопки START GAME
@@ -3017,27 +3054,7 @@ function setupFlipCards() {
                 return;
             }
             
-            // Проверяем, является ли это карточкой текущего игрока
-            const isCurrentPlayerCard = flipCard.id === 'currentPlayerCardFlipCard';
-            
-            // Проверяем, является ли это карточкой другого игрока (имеет data-player-id, но НЕ является карточкой текущего игрока)
-            const playerId = flipCard.getAttribute('data-player-id');
-            if (playerId && !isCurrentPlayerCard) {
-                // Это карточка другого игрока - не переворачиваем её автоматически
-                // Карточки других игроков должны оставаться перевернутыми (показывать картинку)
-                return;
-            }
-            
-            // Карточка текущего игрока переворачивается всегда
-            if (isCurrentPlayerCard) {
-                const flipCardInner = flipCard.querySelector('.flip-card-inner');
-                if (flipCardInner) {
-                    flipCardInner.classList.toggle('flipped');
-                }
-                return;
-            }
-            
-            // Для всех остальных карточек (бункер, секрет) проверяем статус игры
+            // Для всех карточек (кроме голосования) проверяем статус игры
             // Проверяем, начата ли игра (проверяем любую из карточек)
             const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
             if (bunkerCardFlipCard && !bunkerCardFlipCard.classList.contains('game-started')) {
@@ -3046,6 +3063,7 @@ function setupFlipCards() {
                 return;
             }
             
+            // Все карточки (кроме голосования) переворачиваются, если игра начата
             const flipCardInner = flipCard.querySelector('.flip-card-inner');
             if (flipCardInner) {
                 flipCardInner.classList.toggle('flipped');
