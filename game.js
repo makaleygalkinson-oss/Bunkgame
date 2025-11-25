@@ -1549,6 +1549,16 @@ async function loadPlayersInfo() {
         
         // Генерируем данные для карточки текущего игрока
         if (currentPlayer) {
+            // Сохраняем состояние переворота карточки перед обновлением
+            const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
+            let wasFlipped = false;
+            if (currentPlayerCardFlipCard) {
+                const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
+                if (flipCardInner) {
+                    wasFlipped = flipCardInner.classList.contains('flipped');
+                }
+            }
+            
             const currentPlayerData = generatePlayerCardData(currentPlayer.id);
             // В карточке текущего игрока НЕ должно быть blur вообще
             currentPlayerCardEl.innerHTML = `
@@ -1620,6 +1630,18 @@ async function loadPlayersInfo() {
                     votingBtn.style.background = `${currentPlayerColor}20`;
                     votingBtn.style.boxShadow = `0 4px 20px ${currentPlayerColor}40`;
                 });
+            }
+            
+            // Восстанавливаем состояние переворота карточки после обновления
+            if (currentPlayerCardFlipCard) {
+                const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
+                if (flipCardInner) {
+                    if (wasFlipped) {
+                        flipCardInner.classList.add('flipped');
+                    } else {
+                        flipCardInner.classList.remove('flipped');
+                    }
+                }
             }
             
             // Генерируем данные для элементов, у которых blur уже снят
@@ -1773,8 +1795,31 @@ async function loadBlurStatesFromDB() {
             
             console.log('✅ Состояния blur загружены из БД');
             
+            // Сохраняем состояние переворота карточки текущего игрока перед обновлением
+            const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
+            let wasFlipped = false;
+            if (currentPlayerCardFlipCard) {
+                const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
+                if (flipCardInner) {
+                    wasFlipped = flipCardInner.classList.contains('flipped');
+                }
+            }
+            
             // Перезагружаем карточки игроков с обновленными состояниями blur
             await loadPlayersInfo();
+            
+            // Восстанавливаем состояние переворота карточки текущего игрока после обновления
+            if (currentPlayerCardFlipCard) {
+                const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
+                if (flipCardInner) {
+                    if (wasFlipped) {
+                        flipCardInner.classList.add('flipped');
+                    } else {
+                        flipCardInner.classList.remove('flipped');
+                    }
+                }
+            }
+            
             // Восстанавливаем данные для элементов, у которых blur уже снят
             // Используем задержку, чтобы DOM успел обновиться
             setTimeout(() => {
