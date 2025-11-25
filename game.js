@@ -1728,9 +1728,10 @@ async function loadPlayersInfo() {
             
             // Генерируем данные для элементов других игроков, у которых blur уже снят
             // Используем небольшую задержку, чтобы DOM успел обновиться
+            // Вызываем restoreUnblurredData только один раз после всех обновлений
             setTimeout(() => {
                 restoreUnblurredData();
-            }, 100);
+            }, 200);
         }
         
     } catch (err) {
@@ -2017,7 +2018,21 @@ function setupBlurToggleButtons() {
 }
 
 // Восстановление данных для элементов, у которых blur уже снят при загрузке
+let restoreUnblurredDataTimeout = null;
 function restoreUnblurredData() {
+    // Отменяем предыдущий вызов, если он еще не выполнен
+    if (restoreUnblurredDataTimeout) {
+        clearTimeout(restoreUnblurredDataTimeout);
+    }
+    
+    // Откладываем выполнение, чтобы объединить несколько вызовов
+    restoreUnblurredDataTimeout = setTimeout(() => {
+        restoreUnblurredDataTimeout = null;
+        _restoreUnblurredData();
+    }, 150);
+}
+
+function _restoreUnblurredData() {
     console.log('🔄 Восстановление данных для элементов с снятым blur...');
     
     // Находим все элементы с data-player-id (где должны быть данные)
@@ -2088,6 +2103,20 @@ function restoreUnblurredData() {
 
 // Генерация и отображение реальных данных при снятии blur
 function generateAndDisplayData(playerId, itemType) {
+    // Проверяем, существует ли элемент и не обновлен ли он уже
+    const item = document.querySelector(`.player-info-item[data-player-id="${playerId}"][data-item="${itemType}"]`);
+    if (!item) {
+        console.log(`⚠️ Элемент не найден: playerId=${playerId}, itemType=${itemType}`);
+        return;
+    }
+    
+    // Проверяем, не обновлен ли уже элемент (нет blur класса)
+    const span = item.querySelector('span');
+    if (span && !span.classList.contains('blurred')) {
+        // Данные уже отображены, не нужно обновлять
+        return;
+    }
+    
     // Генерируем данные для игрока
     const playerData = generatePlayerCardData(playerId);
     
@@ -2895,8 +2924,16 @@ function subscribeToBlurUpdates() {
                     const playerBlurStates = blurStates[playerId] || {};
                     Object.keys(playerBlurStates).forEach(itemType => {
                         const blurState = playerBlurStates[itemType];
-                        // Обновляем sessionStorage
                         const blurKey = `blur_${playerId}_${itemType}`;
+                        
+                        // Проверяем, изменилось ли состояние blur
+                        const currentState = sessionStorage.getItem(blurKey);
+                        if (currentState === blurState) {
+                            // Состояние не изменилось, пропускаем обновление
+                            return;
+                        }
+                        
+                        // Обновляем sessionStorage
                         sessionStorage.setItem(blurKey, blurState);
                         
                         console.log(`🔄 Realtime обновление blur: playerId=${playerId}, itemType=${itemType}, blurState=${blurState}`);
