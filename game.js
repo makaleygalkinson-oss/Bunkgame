@@ -97,6 +97,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Загружаем карточку бункера
         await loadBunkerCard();
         
+        // Проверяем статус игры и разрешаем переворот карточки если игра начата
+        await checkGameStatus();
+        
         // Загружаем секретную информацию бункера
         await loadBunkerSecretInfo();
         
@@ -111,6 +114,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Настраиваем кнопку выхода
         setupExitButton();
+        
+        // Настраиваем кнопку старта игры
+        setupStartGameButton();
         
         // Настраиваем переворот карточек
         setupFlipCards();
@@ -194,6 +200,38 @@ async function loadLobbyInfo() {
     } catch (err) {
         console.error('Ошибка загрузки информации о лобби:', err);
         gameInfo.innerHTML = '<p class="game-error">Ошибка загрузки информации</p>';
+    }
+}
+
+// Проверка статуса игры
+async function checkGameStatus() {
+    try {
+        const { data: lobbyData, error } = await supabase
+            .from('lobbies')
+            .select('game_started')
+            .eq('lobby_id', parseInt(currentLobbyId))
+            .maybeSingle();
+        
+        if (error) {
+            console.error('Ошибка проверки статуса игры:', error);
+            return;
+        }
+        
+        // Если игра начата, разрешаем переворот карточки бункера
+        if (lobbyData && lobbyData.game_started) {
+            const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+            if (bunkerCardFlipCard) {
+                bunkerCardFlipCard.classList.add('game-started');
+            }
+            
+            // Скрываем кнопку старта
+            const startGameBtn = document.getElementById('startGameBtn');
+            if (startGameBtn) {
+                startGameBtn.style.display = 'none';
+            }
+        }
+    } catch (err) {
+        console.error('Ошибка проверки статуса игры:', err);
     }
 }
 
@@ -505,12 +543,123 @@ async function loadBunkerSecretInfo() {
     }
 }
 
-// Загрузка карточки бункера
+// Генерация данных карточки бункера
+function generateBunkerCardData(playerCount) {
+    // Рассчитываем вместимость: количество игроков / 2, округление вниз
+    const capacity = Math.floor(playerCount / 2);
+    
+    // Выбираем случайную катастрофу
+    const randomCatastrophe = CATASTROPHES[Math.floor(Math.random() * CATASTROPHES.length)];
+    
+    // Генерируем срок жизни в бункере на основе диапазона катастрофы
+    const lifetimeData = generateLifetime(randomCatastrophe.lifetimeRange);
+    const lifetimeDisplay = `${lifetimeData.value} ${lifetimeData.unit}`;
+    
+    // Выбираем случайные варианты для оснащения
+    const medpoint = MEDPOINT_OPTIONS[Math.floor(Math.random() * MEDPOINT_OPTIONS.length)];
+    const mechanicRoom = MECHANIC_ROOM_OPTIONS[Math.floor(Math.random() * MECHANIC_ROOM_OPTIONS.length)];
+    const growingRoom = GROWING_ROOM_OPTIONS[Math.floor(Math.random() * GROWING_ROOM_OPTIONS.length)];
+    
+    // Получаем предметы спец. снабжения для данной катастрофы
+    const supplyItems = SPECIAL_SUPPLY_ITEMS[randomCatastrophe.name] || ['Запас продовольствия', 'Вода', 'Медицинские принадлежности'];
+    const specialSupplyCount = Math.floor(Math.random() * 2) + 2; // 2 или 3 предмета
+    const selectedSupplies = getRandomItems(supplyItems, specialSupplyCount);
+    const specialSupply = selectedSupplies.join(', ');
+    
+    return {
+        catastrophe: randomCatastrophe.name,
+        description: randomCatastrophe.description,
+        lifetime: lifetimeDisplay,
+        capacity: capacity,
+        medpoint: medpoint,
+        mechanicRoom: mechanicRoom,
+        growingRoom: growingRoom,
+        specialSupply: specialSupply
+    };
+}
+
+// Отображение данных карточки бункера
+function displayBunkerCard(data) {
+    const bunkerCardContent = document.getElementById('bunkerCardContent');
+    if (!bunkerCardContent || !data) return;
+    
+    bunkerCardContent.innerHTML = `
+        <div class="bunker-card-info">
+            <div class="bunker-info-item"><strong>Катастрофа:</strong> ${data.catastrophe}</div>
+            <div class="bunker-info-item"><strong>Описание катастрофы:</strong> ${data.description}</div>
+            <div class="bunker-info-item"><strong>Срок жизни в бункере:</strong> ${data.lifetime}</div>
+            <div class="bunker-info-item"><strong>Условия Бункера:</strong> (вместимость: ${data.capacity} человек)</div>
+            <div class="bunker-info-item"><strong>Оснащение бункера:</strong></div>
+            <div class="bunker-info-subitem">Медпункт: ${data.medpoint}</div>
+            <div class="bunker-info-subitem">Комната механика: ${data.mechanicRoom}</div>
+            <div class="bunker-info-subitem">Комната выращивания: ${data.growingRoom}</div>
+            <div class="bunker-info-item"><strong>Спец.Снабжение:</strong> ${data.specialSupply}</div>
+        </div>
+    `;
+}
+
+// Загрузка карточки бункера из БД
 async function loadBunkerCard() {
     const bunkerCardContent = document.getElementById('bunkerCardContent');
     if (!bunkerCardContent) return;
     
     try {
+        // Загружаем данные карточки бункера из БД
+        const { data: lobbyData, error: lobbyError } = await supabase
+            .from('lobbies')
+            .select('bunker_card_data, game_started')
+            .eq('lobby_id', parseInt(currentLobbyId))
+            .maybeSingle();
+        
+        if (lobbyError) {
+            console.error('Ошибка загрузки данных карточки бункера:', lobbyError);
+            bunkerCardContent.innerHTML = '<p class="game-error">Ошибка загрузки карточки бункера</p>';
+            return;
+        }
+        
+        // Если игра не начата, показываем заглушку
+        if (!lobbyData || !lobbyData.game_started || !lobbyData.bunker_card_data) {
+            bunkerCardContent.innerHTML = `
+                <div class="bunker-card-info">
+                    <p style="text-align: center; color: #808080; padding: 2rem;">
+                        Нажмите "Start Game" для начала игры
+                    </p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Отображаем данные из БД
+        displayBunkerCard(lobbyData.bunker_card_data);
+        
+    } catch (err) {
+        console.error('Ошибка загрузки карточки бункера:', err);
+        bunkerCardContent.innerHTML = '<p class="game-error">Ошибка загрузки карточки бункера</p>';
+    }
+}
+
+// Настройка кнопки старта игры
+function setupStartGameButton() {
+    const startGameBtn = document.getElementById('startGameBtn');
+    if (!startGameBtn) {
+        console.error('❌ Кнопка старта игры не найдена');
+        return;
+    }
+    
+    startGameBtn.addEventListener('click', async () => {
+        await startGame();
+    });
+}
+
+// Старт игры - генерация и сохранение данных карточки бункера
+async function startGame() {
+    try {
+        const startGameBtn = document.getElementById('startGameBtn');
+        if (startGameBtn) {
+            startGameBtn.disabled = true;
+            startGameBtn.textContent = 'Загрузка...';
+        }
+        
         // Получаем список игроков в лобби для расчета вместимости
         const { data: players, error: playersError } = await supabase
             .from('users')
@@ -518,47 +667,62 @@ async function loadBunkerCard() {
             .eq('lobby_id', parseInt(currentLobbyId));
         
         if (playersError) {
-            console.error('Ошибка загрузки игроков для карточки бункера:', playersError);
+            console.error('Ошибка загрузки игроков для старта игры:', playersError);
+            if (startGameBtn) {
+                startGameBtn.disabled = false;
+                startGameBtn.textContent = 'Start Game';
+            }
+            return;
         }
         
-        // Рассчитываем вместимость: количество игроков / 2, округление вниз
         const playerCount = players ? players.length : 0;
-        const capacity = Math.floor(playerCount / 2);
         
-        // Выбираем случайную катастрофу
-        const randomCatastrophe = CATASTROPHES[Math.floor(Math.random() * CATASTROPHES.length)];
+        // Генерируем данные карточки бункера
+        const bunkerCardData = generateBunkerCardData(playerCount);
         
-        // Генерируем срок жизни в бункере на основе диапазона катастрофы
-        const lifetimeData = generateLifetime(randomCatastrophe.lifetimeRange);
-        const lifetimeDisplay = `${lifetimeData.value} ${lifetimeData.unit}`;
+        // Сохраняем данные в БД
+        const { error: updateError } = await supabase
+            .from('lobbies')
+            .update({ 
+                bunker_card_data: bunkerCardData,
+                game_started: true
+            })
+            .eq('lobby_id', parseInt(currentLobbyId));
         
-        // Выбираем случайные варианты для оснащения
-        const medpoint = MEDPOINT_OPTIONS[Math.floor(Math.random() * MEDPOINT_OPTIONS.length)];
-        const mechanicRoom = MECHANIC_ROOM_OPTIONS[Math.floor(Math.random() * MECHANIC_ROOM_OPTIONS.length)];
-        const growingRoom = GROWING_ROOM_OPTIONS[Math.floor(Math.random() * GROWING_ROOM_OPTIONS.length)];
+        if (updateError) {
+            console.error('Ошибка сохранения данных карточки бункера:', updateError);
+            alert('Ошибка сохранения данных. Попробуйте еще раз.');
+            if (startGameBtn) {
+                startGameBtn.disabled = false;
+                startGameBtn.textContent = 'Start Game';
+            }
+            return;
+        }
         
-        // Получаем предметы спец. снабжения для данной катастрофы
-        const supplyItems = SPECIAL_SUPPLY_ITEMS[randomCatastrophe.name] || ['Запас продовольствия', 'Вода', 'Медицинские принадлежности'];
-        const specialSupplyCount = Math.floor(Math.random() * 2) + 2; // 2 или 3 предмета
-        const selectedSupplies = getRandomItems(supplyItems, specialSupplyCount);
-        const specialSupply = selectedSupplies.join(', ');
+        console.log('✅ Игра начата, данные карточки бункера сохранены');
         
-        bunkerCardContent.innerHTML = `
-            <div class="bunker-card-info">
-                <div class="bunker-info-item"><strong>Катастрофа:</strong> ${randomCatastrophe.name}</div>
-                <div class="bunker-info-item"><strong>Описание катастрофы:</strong> ${randomCatastrophe.description}</div>
-                <div class="bunker-info-item"><strong>Срок жизни в бункере:</strong> ${lifetimeDisplay}</div>
-                <div class="bunker-info-item"><strong>Условия Бункера:</strong> (вместимость: ${capacity} человек)</div>
-                <div class="bunker-info-item"><strong>Оснащение бункера:</strong></div>
-                <div class="bunker-info-subitem">Медпункт: ${medpoint}</div>
-                <div class="bunker-info-subitem">Комната механика: ${mechanicRoom}</div>
-                <div class="bunker-info-subitem">Комната выращивания: ${growingRoom}</div>
-                <div class="bunker-info-item"><strong>Спец.Снабжение:</strong> ${specialSupply}</div>
-            </div>
-        `;
+        // Отображаем данные
+        displayBunkerCard(bunkerCardData);
+        
+        // Разрешаем переворот карточки бункера
+        const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+        if (bunkerCardFlipCard) {
+            bunkerCardFlipCard.classList.add('game-started');
+        }
+        
+        // Скрываем кнопку старта
+        if (startGameBtn) {
+            startGameBtn.style.display = 'none';
+        }
+        
     } catch (err) {
-        console.error('Ошибка загрузки карточки бункера:', err);
-        bunkerCardContent.innerHTML = '<p class="game-error">Ошибка загрузки карточки бункера</p>';
+        console.error('Ошибка старта игры:', err);
+        alert('Ошибка старта игры. Попробуйте еще раз.');
+        const startGameBtn = document.getElementById('startGameBtn');
+        if (startGameBtn) {
+            startGameBtn.disabled = false;
+            startGameBtn.textContent = 'Start Game';
+        }
     }
 }
 
@@ -2413,6 +2577,49 @@ function subscribeToBlurUpdates() {
                     console.log('✅ Голосование обновлено через realtime');
                 }
                 
+                // Обработка обновлений bunker_card_data (карточка бункера)
+                if (payload.new && payload.new.bunker_card_data) {
+                    const bunkerCardData = payload.new.bunker_card_data;
+                    console.log('📦 Получены bunker_card_data через realtime:', bunkerCardData);
+                    
+                    // Отображаем данные карточки бункера
+                    displayBunkerCard(bunkerCardData);
+                    
+                    // Разрешаем переворот карточки бункера
+                    const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+                    if (bunkerCardFlipCard) {
+                        bunkerCardFlipCard.classList.add('game-started');
+                    }
+                    
+                    // Скрываем кнопку старта
+                    const startGameBtn = document.getElementById('startGameBtn');
+                    if (startGameBtn) {
+                        startGameBtn.style.display = 'none';
+                    }
+                    
+                    console.log('✅ Карточка бункера обновлена через realtime');
+                }
+                
+                // Обработка обновлений game_started
+                if (payload.new && payload.new.game_started !== undefined) {
+                    const gameStarted = payload.new.game_started;
+                    console.log('📦 Получен game_started через realtime:', gameStarted);
+                    
+                    if (gameStarted) {
+                        // Разрешаем переворот карточки бункера
+                        const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+                        if (bunkerCardFlipCard) {
+                            bunkerCardFlipCard.classList.add('game-started');
+                        }
+                        
+                        // Скрываем кнопку старта
+                        const startGameBtn = document.getElementById('startGameBtn');
+                        if (startGameBtn) {
+                            startGameBtn.style.display = 'none';
+                        }
+                    }
+                }
+                
                 // Обработка обновлений blur_states
                 if (!payload.new || !payload.new.blur_states) {
                     // Если нет blur_states, но есть player_colors или votes, уже обработали выше
@@ -2650,6 +2857,18 @@ function setupFlipCards() {
         
         const flipCard = e.target.closest('.flip-card');
         if (flipCard) {
+            // Проверяем, является ли это карточкой бункера
+            const bunkerCard = flipCard.querySelector('.bunker-card-block');
+            if (bunkerCard) {
+                // Проверяем, начата ли игра
+                const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
+                if (bunkerCardFlipCard && !bunkerCardFlipCard.classList.contains('game-started')) {
+                    // Игра не начата - блокируем переворот
+                    console.log('ℹ️ Игра еще не начата, карточка бункера заблокирована');
+                    return;
+                }
+            }
+            
             const flipCardInner = flipCard.querySelector('.flip-card-inner');
             if (flipCardInner) {
                 flipCardInner.classList.toggle('flipped');
@@ -2725,16 +2944,29 @@ async function exitFromLobby() {
 
 // Heartbeat - отправка сигнала активности
 async function sendHeartbeat() {
-    if (!currentUserId) return;
+    if (!currentUserId) {
+        console.log('⚠️ Heartbeat: нет currentUserId');
+        return;
+    }
     
     try {
+        const timestamp = new Date().toISOString();
+        console.log(`💓 Heartbeat отправка: userId=${currentUserId}, timestamp=${timestamp}`);
+        
         // Обновляем updated_at для текущего игрока
-        await supabase
+        const { data, error } = await supabase
             .from('users')
-            .update({ updated_at: new Date().toISOString() })
-            .eq('id', currentUserId);
+            .update({ updated_at: timestamp })
+            .eq('id', currentUserId)
+            .select();
+        
+        if (error) {
+            console.error('❌ Ошибка отправки heartbeat:', error);
+        } else {
+            console.log('✅ Heartbeat успешно отправлен:', data);
+        }
     } catch (err) {
-        console.error('Ошибка отправки heartbeat:', err);
+        console.error('❌ Исключение при отправке heartbeat:', err);
     }
 }
 
@@ -2762,9 +2994,14 @@ function stopHeartbeat() {
 
 // Проверка неактивных игроков и их автоматический выход
 async function checkInactivePlayers() {
-    if (!currentLobbyId) return;
+    if (!currentLobbyId) {
+        console.log('⚠️ Проверка неактивных: нет currentLobbyId');
+        return;
+    }
     
     try {
+        console.log(`🔍 Проверка неактивных игроков для лобби: ${currentLobbyId}`);
+        
         // Получаем всех игроков в лобби
         const { data: players, error: playersError } = await supabase
             .from('users')
@@ -2772,32 +3009,48 @@ async function checkInactivePlayers() {
             .eq('lobby_id', parseInt(currentLobbyId));
         
         if (playersError) {
-            console.error('Ошибка проверки неактивных игроков:', playersError);
+            console.error('❌ Ошибка проверки неактивных игроков:', playersError);
             return;
         }
         
-        if (!players || players.length === 0) return;
+        if (!players || players.length === 0) {
+            console.log('ℹ️ Нет игроков в лобби для проверки');
+            return;
+        }
+        
+        console.log(`📊 Найдено игроков в лобби: ${players.length}`);
         
         const now = new Date();
         const inactiveThreshold = 30000; // 30 секунд в миллисекундах
         
         // Проверяем каждого игрока
         for (const player of players) {
-            if (player.id === currentUserId) continue; // Пропускаем текущего игрока
+            if (player.id === currentUserId) {
+                console.log(`✓ Пропускаем текущего игрока: ${player.name || player.email}`);
+                continue; // Пропускаем текущего игрока
+            }
+            
+            if (!player.updated_at) {
+                console.log(`⚠️ Игрок ${player.name || player.email} не имеет updated_at`);
+                continue;
+            }
             
             const lastActivity = new Date(player.updated_at);
             const timeSinceActivity = now - lastActivity;
+            const secondsInactive = Math.floor(timeSinceActivity / 1000);
+            
+            console.log(`⏱️ Игрок ${player.name || player.email}: неактивен ${secondsInactive} секунд (порог: 30 сек)`);
             
             // Если игрок неактивен более 30 секунд
             if (timeSinceActivity > inactiveThreshold) {
-                console.log(`⏰ Игрок ${player.name || player.email} неактивен ${Math.floor(timeSinceActivity / 1000)} секунд, выводим из лобби`);
+                console.log(`⏰ Игрок ${player.name || player.email} неактивен ${secondsInactive} секунд, выводим из лобби`);
                 
                 // Удаляем игрока из лобби
                 await removeInactivePlayer(player.id);
             }
         }
     } catch (err) {
-        console.error('Ошибка проверки неактивных игроков:', err);
+        console.error('❌ Исключение при проверке неактивных игроков:', err);
     }
 }
 
