@@ -3017,6 +3017,14 @@ function setupFlipCards() {
                 return;
             }
             
+            // Проверяем, является ли это карточкой другого игрока (имеет data-player-id)
+            const playerId = flipCard.getAttribute('data-player-id');
+            if (playerId) {
+                // Это карточка другого игрока - не переворачиваем её автоматически
+                // Карточки других игроков должны оставаться перевернутыми (показывать картинку)
+                return;
+            }
+            
             // Для всех остальных карточек проверяем статус игры
             // Проверяем, начата ли игра (проверяем любую из карточек)
             const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');

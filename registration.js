@@ -578,6 +578,44 @@ async function connectToLobby(lobbyId) {
         
         console.log('Обновление lobby_id для пользователя:', user.id, 'на значение:', numericLobbyId);
         
+        // Инициализируем blur_states для нового игрока в лобби
+        try {
+            // Получаем текущие blur_states из лобби
+            const { data: lobbyData, error: lobbyError } = await supabase
+                .from('lobbies')
+                .select('blur_states')
+                .eq('lobby_id', numericLobbyId)
+                .maybeSingle();
+            
+            if (!lobbyError && lobbyData) {
+                const blurStates = lobbyData.blur_states || {};
+                const itemTypes = ['genderAge', 'profession', 'health', 'hobby', 'phobia', 'fact1', 'fact2', 'action1', 'action2'];
+                
+                // Если для этого игрока еще нет blur_states, инициализируем их
+                if (!blurStates[user.id]) {
+                    blurStates[user.id] = {};
+                    itemTypes.forEach(itemType => {
+                        blurStates[user.id][itemType] = '1'; // '1' означает, что blur включен
+                    });
+                    
+                    // Сохраняем обновленные blur_states в БД
+                    const { error: updateBlurError } = await supabase
+                        .from('lobbies')
+                        .update({ blur_states: blurStates })
+                        .eq('lobby_id', numericLobbyId);
+                    
+                    if (updateBlurError) {
+                        console.error('Ошибка обновления blur_states:', updateBlurError);
+                    } else {
+                        console.log('✅ blur_states инициализированы для нового игрока:', user.id);
+                    }
+                }
+            }
+        } catch (blurError) {
+            console.error('Ошибка инициализации blur_states:', blurError);
+            // Продолжаем подключение даже если не удалось инициализировать blur_states
+        }
+        
         // Обновляем запись пользователя в БД - добавляем lobby_id (числовой)
         // Сначала пробуем с .select(), если не работает - без него
         let { data: updatedData, error: updateError } = await supabase
@@ -973,12 +1011,24 @@ async function createLobby() {
             newLobbyId = parseInt(maxLobbyData[0].lobby_id) + 1;
         }
         
+        // Инициализируем blur_states для всех игроков (по умолчанию все blur включены)
+        // Получаем всех игроков, которые будут в лобби (пока только создатель)
+        const itemTypes = ['genderAge', 'profession', 'health', 'hobby', 'phobia', 'fact1', 'fact2', 'action1', 'action2'];
+        const blurStates = {};
+        
+        // Инициализируем blur для создателя (все элементы с blur по умолчанию)
+        blurStates[user.id] = {};
+        itemTypes.forEach(itemType => {
+            blurStates[user.id][itemType] = '1'; // '1' означает, что blur включен
+        });
+        
         // Создаем запись лобби в базе данных
         const lobbyData = {
             lobby_id: newLobbyId,
             creator_id: user.id,
             creator_name: user.name,
             active_role: roleValue,
+            blur_states: blurStates,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         };
