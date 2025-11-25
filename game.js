@@ -224,16 +224,16 @@ function enableAllCardsFlip() {
     }
 }
 
-// Блокировка переворота всех карточек (кроме голосования) и переворот обратно
+// Блокировка переворота всех карточек (кроме голосования) и переворот на обратную сторону (картинка)
 function disableAllCardsFlip() {
     // Карточка бункера
     const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
     if (bunkerCardFlipCard) {
         bunkerCardFlipCard.classList.remove('game-started');
-        // Переворачиваем обратно (убираем класс flipped)
+        // Переворачиваем на обратную сторону (добавляем класс flipped для показа картинки)
         const flipCardInner = bunkerCardFlipCard.querySelector('.flip-card-inner');
         if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
+            flipCardInner.classList.add('flipped');
         }
     }
     
@@ -241,10 +241,10 @@ function disableAllCardsFlip() {
     const bunkerSecretFlipCard = document.getElementById('bunkerSecretFlipCard');
     if (bunkerSecretFlipCard) {
         bunkerSecretFlipCard.classList.remove('game-started');
-        // Переворачиваем обратно
+        // Переворачиваем на обратную сторону
         const flipCardInner = bunkerSecretFlipCard.querySelector('.flip-card-inner');
         if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
+            flipCardInner.classList.add('flipped');
         }
     }
     
@@ -252,10 +252,10 @@ function disableAllCardsFlip() {
     const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
     if (currentPlayerCardFlipCard) {
         currentPlayerCardFlipCard.classList.remove('game-started');
-        // Переворачиваем обратно
+        // Переворачиваем на обратную сторону
         const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
         if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
+            flipCardInner.classList.add('flipped');
         }
     }
 }
