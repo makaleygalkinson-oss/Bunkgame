@@ -231,11 +231,8 @@ function enableAllCardsFlip() {
     const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
     if (currentPlayerCardFlipCard) {
         currentPlayerCardFlipCard.classList.add('game-started');
-        // Переворачиваем на лицевую сторону
-        const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
-        if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
-        }
+        // НЕ переворачиваем карточку текущего игрока автоматически - пользователь сам решает
+        // Только разрешаем переворот (класс game-started уже добавлен)
     }
     
     // Карточки других игроков (все карточки с data-player-id)
