@@ -1654,6 +1654,19 @@ async function loadPlayersInfo() {
         if (otherPlayers.length === 0) {
             playersContent.innerHTML = '';
         } else {
+            // Сохраняем состояние переворота карточек других игроков перед обновлением
+            const existingCards = document.querySelectorAll('.flip-card[data-player-id]');
+            const flipStates = {};
+            existingCards.forEach(card => {
+                const playerId = card.getAttribute('data-player-id');
+                if (playerId) {
+                    const flipCardInner = card.querySelector('.flip-card-inner');
+                    if (flipCardInner) {
+                        flipStates[playerId] = flipCardInner.classList.contains('flipped');
+                    }
+                }
+            });
+            
             const otherPlayersHTML = otherPlayers.map(player => {
                 const playerName = player.name || player.email || 'Неизвестный';
                 
@@ -1695,6 +1708,23 @@ async function loadPlayersInfo() {
             }).join('');
             
             playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
+            
+            // Восстанавливаем состояние переворота карточек других игроков после обновления
+            setTimeout(() => {
+                Object.keys(flipStates).forEach(playerId => {
+                    const card = document.querySelector(`.flip-card[data-player-id="${playerId}"]`);
+                    if (card) {
+                        const flipCardInner = card.querySelector('.flip-card-inner');
+                        if (flipCardInner) {
+                            if (flipStates[playerId]) {
+                                flipCardInner.classList.add('flipped');
+                            } else {
+                                flipCardInner.classList.remove('flipped');
+                            }
+                        }
+                    }
+                });
+            }, 50);
             
             // Генерируем данные для элементов других игроков, у которых blur уже снят
             // Используем небольшую задержку, чтобы DOM успел обновиться
@@ -2955,6 +2985,19 @@ function subscribeToPlayersUpdates() {
             },
             async (payload) => {
                 console.log('🔄 Realtime UPDATE users - полный payload:', payload);
+                
+                // Пропускаем обновления, если изменился только updated_at (heartbeat)
+                const oldData = payload.old || {};
+                const newData = payload.new || {};
+                const changedFields = Object.keys(newData).filter(key => {
+                    return oldData[key] !== newData[key] && key !== 'updated_at';
+                });
+                
+                // Если изменилось только updated_at, пропускаем обновление
+                if (changedFields.length === 0) {
+                    console.log('ℹ️ Изменился только updated_at (heartbeat), пропускаем обновление');
+                    return;
+                }
                 
                 const oldLobbyId = payload.old?.lobby_id;
                 const newLobbyId = payload.new?.lobby_id;
