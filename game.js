@@ -224,57 +224,6 @@ function enableAllCardsFlip() {
     }
 }
 
-// Блокировка переворота всех карточек (кроме голосования) и переворот обратно
-function disableAllCardsFlip() {
-    // Карточка бункера
-    const bunkerCardFlipCard = document.getElementById('bunkerCardFlipCard');
-    if (bunkerCardFlipCard) {
-        bunkerCardFlipCard.classList.remove('game-started');
-        // Переворачиваем обратно (убираем класс flipped)
-        const flipCardInner = bunkerCardFlipCard.querySelector('.flip-card-inner');
-        if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
-        }
-    }
-    
-    // Секретная карточка
-    const bunkerSecretFlipCard = document.getElementById('bunkerSecretFlipCard');
-    if (bunkerSecretFlipCard) {
-        bunkerSecretFlipCard.classList.remove('game-started');
-        // Переворачиваем обратно
-        const flipCardInner = bunkerSecretFlipCard.querySelector('.flip-card-inner');
-        if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
-        }
-    }
-    
-    // Карточка текущего игрока
-    const currentPlayerCardFlipCard = document.getElementById('currentPlayerCardFlipCard');
-    if (currentPlayerCardFlipCard) {
-        currentPlayerCardFlipCard.classList.remove('game-started');
-        // Переворачиваем обратно
-        const flipCardInner = currentPlayerCardFlipCard.querySelector('.flip-card-inner');
-        if (flipCardInner) {
-            flipCardInner.classList.remove('flipped');
-        }
-    }
-}
-
-// Обновление состояния кнопки START GAME
-function updateStartGameButton(gameStarted) {
-    const startGameBtn = document.getElementById('startGameBtn');
-    if (!startGameBtn) return;
-    
-    if (gameStarted) {
-        startGameBtn.textContent = 'Stop Game';
-        startGameBtn.style.display = 'block';
-    } else {
-        startGameBtn.textContent = 'Start Game';
-        startGameBtn.style.display = 'block';
-    }
-    startGameBtn.disabled = false;
-}
-
 // Проверка статуса игры
 async function checkGameStatus() {
     try {
@@ -289,16 +238,15 @@ async function checkGameStatus() {
             return;
         }
         
-        const gameStarted = lobbyData && lobbyData.game_started === true;
-        
-        // Обновляем состояние кнопки
-        updateStartGameButton(gameStarted);
-        
         // Если игра начата, разрешаем переворот всех карточек
-        if (gameStarted) {
+        if (lobbyData && lobbyData.game_started) {
             enableAllCardsFlip();
-        } else {
-            disableAllCardsFlip();
+            
+            // Скрываем кнопку старта
+            const startGameBtn = document.getElementById('startGameBtn');
+            if (startGameBtn) {
+                startGameBtn.style.display = 'none';
+            }
         }
     } catch (err) {
         console.error('Ошибка проверки статуса игры:', err);
@@ -636,7 +584,7 @@ async function loadBunkerSecretInfo() {
         }
         
         // Если игра не начата, показываем заглушку
-        if (!lobbyData || lobbyData.game_started !== true || !lobbyData.bunker_secret_data) {
+        if (!lobbyData || !lobbyData.game_started || !lobbyData.bunker_secret_data) {
             bunkerSecretContent.innerHTML = `
                 <div class="bunker-card-info">
                     <p style="text-align: center; color: #808080; padding: 2rem;">
@@ -731,14 +679,14 @@ async function loadBunkerCard() {
         }
         
         // Если игра не начата, показываем заглушку
-        if (!lobbyData || lobbyData.game_started !== true || !lobbyData.bunker_card_data) {
-    bunkerCardContent.innerHTML = `
-        <div class="bunker-card-info">
+        if (!lobbyData || !lobbyData.game_started || !lobbyData.bunker_card_data) {
+            bunkerCardContent.innerHTML = `
+                <div class="bunker-card-info">
                     <p style="text-align: center; color: #808080; padding: 2rem;">
                         Нажмите "Start Game" для начала игры
                     </p>
-        </div>
-    `;
+                </div>
+            `;
             return;
         }
         
@@ -764,7 +712,7 @@ function setupStartGameButton() {
     });
 }
 
-// Переключение статуса игры (Start/Stop Game)
+// Старт игры - генерация и сохранение данных карточки бункера
 async function startGame() {
     try {
         const startGameBtn = document.getElementById('startGameBtn');
@@ -773,15 +721,14 @@ async function startGame() {
             startGameBtn.textContent = 'Загрузка...';
         }
         
-        // Получаем текущий статус игры из БД
-        const { data: lobbyData, error: statusError } = await supabase
-            .from('lobbies')
-            .select('game_started')
-            .eq('lobby_id', parseInt(currentLobbyId))
-            .maybeSingle();
+        // Получаем список игроков в лобби для расчета вместимости
+        const { data: players, error: playersError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('lobby_id', parseInt(currentLobbyId));
         
-        if (statusError) {
-            console.error('Ошибка загрузки статуса игры:', statusError);
+        if (playersError) {
+            console.error('Ошибка загрузки игроков для старта игры:', playersError);
             if (startGameBtn) {
                 startGameBtn.disabled = false;
                 startGameBtn.textContent = 'Start Game';
@@ -789,78 +736,51 @@ async function startGame() {
             return;
         }
         
-        const currentStatus = lobbyData && lobbyData.game_started === true;
-        const newStatus = !currentStatus; // Переключаем статус
+        const playerCount = players ? players.length : 0;
         
-        let updateData = { game_started: newStatus };
+        // Генерируем данные карточки бункера
+        const bunkerCardData = generateBunkerCardData(playerCount);
         
-        // Если запускаем игру (newStatus = true), генерируем данные
-        if (newStatus) {
-            // Получаем список игроков в лобби для расчета вместимости
-            const { data: players, error: playersError } = await supabase
-                .from('users')
-                .select('id')
-                .eq('lobby_id', parseInt(currentLobbyId));
-            
-            if (playersError) {
-                console.error('Ошибка загрузки игроков для старта игры:', playersError);
-                if (startGameBtn) {
-                    startGameBtn.disabled = false;
-                    startGameBtn.textContent = currentStatus ? 'Stop Game' : 'Start Game';
-                }
-                return;
-            }
-            
-            const playerCount = players ? players.length : 0;
-            
-            // Генерируем данные карточки бункера
-            const bunkerCardData = generateBunkerCardData(playerCount);
-            
-            // Генерируем данные секретной информации
-            const bunkerSecretData = generateBunkerSecretData();
-            
-            updateData.bunker_card_data = bunkerCardData;
-            updateData.bunker_secret_data = bunkerSecretData;
-        }
+        // Генерируем данные секретной информации
+        const bunkerSecretData = generateBunkerSecretData();
         
-        // Сохраняем статус в БД
+        // Сохраняем данные в БД
         const { error: updateError } = await supabase
             .from('lobbies')
-            .update(updateData)
+            .update({ 
+                bunker_card_data: bunkerCardData,
+                bunker_secret_data: bunkerSecretData,
+                game_started: true
+            })
             .eq('lobby_id', parseInt(currentLobbyId));
         
         if (updateError) {
-            console.error('Ошибка сохранения статуса игры:', updateError);
+            console.error('Ошибка сохранения данных карточки бункера:', updateError);
             alert('Ошибка сохранения данных. Попробуйте еще раз.');
             if (startGameBtn) {
                 startGameBtn.disabled = false;
-                startGameBtn.textContent = currentStatus ? 'Stop Game' : 'Start Game';
+                startGameBtn.textContent = 'Start Game';
             }
             return;
         }
         
-        if (newStatus) {
-            console.log('✅ Игра начата, данные карточки бункера и секретной информации сохранены');
-            
-            // Отображаем данные
-            displayBunkerCard(updateData.bunker_card_data);
-            displayBunkerSecretInfo(updateData.bunker_secret_data);
-            
-            // Разрешаем переворот всех карточек (кроме голосования)
-            enableAllCardsFlip();
-        } else {
-            console.log('🛑 Игра остановлена');
-            
-            // Блокируем переворот и переворачиваем карточки обратно
-            disableAllCardsFlip();
+        console.log('✅ Игра начата, данные карточки бункера и секретной информации сохранены');
+        
+        // Отображаем данные
+        displayBunkerCard(bunkerCardData);
+        displayBunkerSecretInfo(bunkerSecretData);
+        
+        // Разрешаем переворот всех карточек (кроме голосования)
+        enableAllCardsFlip();
+        
+        // Скрываем кнопку старта
+        if (startGameBtn) {
+            startGameBtn.style.display = 'none';
         }
         
-        // Обновляем состояние кнопки
-        updateStartGameButton(newStatus);
-        
     } catch (err) {
-        console.error('Ошибка переключения статуса игры:', err);
-        alert('Ошибка. Попробуйте еще раз.');
+        console.error('Ошибка старта игры:', err);
+        alert('Ошибка старта игры. Попробуйте еще раз.');
         const startGameBtn = document.getElementById('startGameBtn');
         if (startGameBtn) {
             startGameBtn.disabled = false;
@@ -1838,7 +1758,7 @@ async function loadVoting() {
                 <div class="voting-item">
                     <span class="voting-player-name" style="color: ${playerColor};">${playerName}</span>
                     <div class="voting-circles-container">
-                    ${circlesHTML}
+                        ${circlesHTML}
                     </div>
                 </div>
             `;
@@ -2754,18 +2674,18 @@ function subscribeToBlurUpdates() {
                 
                 // Обработка обновлений game_started
                 if (payload.new && payload.new.game_started !== undefined) {
-                    const gameStarted = payload.new.game_started === true;
+                    const gameStarted = payload.new.game_started;
                     console.log('📦 Получен game_started через realtime:', gameStarted);
-                    
-                    // Обновляем состояние кнопки
-                    updateStartGameButton(gameStarted);
                     
                     if (gameStarted) {
                         // Разрешаем переворот всех карточек (кроме голосования)
                         enableAllCardsFlip();
-                    } else {
-                        // Блокируем переворот и переворачиваем карточки обратно
-                        disableAllCardsFlip();
+                        
+                        // Скрываем кнопку старта
+                        const startGameBtn = document.getElementById('startGameBtn');
+                        if (startGameBtn) {
+                            startGameBtn.style.display = 'none';
+                        }
                     }
                 }
                 
