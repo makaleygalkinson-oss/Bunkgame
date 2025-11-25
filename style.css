@@ -928,6 +928,14 @@ body {
     min-height: 900px;
 }
 
+/* Исправление размера обратной стороны карточки ГОЛОСОВАНИЕ */
+.voting-block + .flip-card-back,
+.voting-block ~ .flip-card-back,
+.game-left-column .flip-card .flip-card-back {
+    min-height: 900px;
+    height: 100%;
+}
+
 /* Блок секретной информации бункера */
 .bunker-secret-block {
     min-height: 500px;
@@ -1994,6 +2002,12 @@ body {
         min-height: 600px !important; /* Такая же высота как у players-block */
     }
     
+    /* Исправление размера обратной стороны карточки ГОЛОСОВАНИЕ для FULL HD */
+    .game-left-column .flip-card .flip-card-back {
+        min-height: 900px !important;
+        height: 100% !important;
+    }
+    
     /* Обратная сторона карточки (с картинкой) для FULL HD - по параметрам карточки текущего игрока */
     .game-content .game-layout .game-center-column .players-block .flip-card-back {
         min-height: 600px !important; /* Такая же высота как у players-block */
@@ -2331,6 +2345,12 @@ body {
     /* Увеличение минимальных высот для больших экранов */
     .voting-block {
         min-height: 1000px;
+    }
+    
+    /* Исправление размера обратной стороны карточки ГОЛОСОВАНИЕ для 2K */
+    .game-left-column .flip-card .flip-card-back {
+        min-height: 1000px;
+        height: 100%;
     }
     
     .player-card-block {
