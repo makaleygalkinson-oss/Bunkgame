@@ -433,6 +433,21 @@ async function checkCurrentUser() {
                 localStorage.setItem('currentUser', JSON.stringify(updatedUser));
                 sessionStorage.setItem('currentUser', JSON.stringify(updatedUser));
                 
+                // Проверяем lobby_id пользователя - если он 0 или отсутствует, очищаем currentLobbyId
+                const { data: userLobbyData, error: lobbyError } = await supabase
+                    .from('users')
+                    .select('lobby_id')
+                    .eq('id', dbUser.id)
+                    .maybeSingle();
+                
+                if (!lobbyError && userLobbyData) {
+                    if (!userLobbyData.lobby_id || userLobbyData.lobby_id === 0) {
+                        // Пользователь не в лобби, очищаем currentLobbyId
+                        sessionStorage.removeItem('currentLobbyId');
+                        console.log('ℹ️ Пользователь не в лобби, очищен currentLobbyId');
+                    }
+                }
+                
                 updateAuthUI(updatedUser);
                 console.log('✅ Сессия восстановлена для пользователя:', updatedUser.name);
             } else if (!error) {
@@ -575,6 +590,13 @@ async function connectToLobby(lobbyId) {
         if (updatedData && updatedData.length > 0) {
             console.log('Успешно обновлено:', updatedData);
             console.log('Новый lobby_id пользователя:', updatedData[0].lobby_id);
+        }
+        
+        // Проверяем, что lobby_id действительно установлен (не 0)
+        if (numericLobbyId === 0) {
+            console.error('Ошибка: lobby_id не может быть 0');
+            alert('Ошибка: некорректный ID лобби');
+            return;
         }
         
         // Сохраняем информацию о лобби в sessionStorage

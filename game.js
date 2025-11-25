@@ -28,7 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (!userStr) {
         console.log('❌ Пользователь не авторизован, возвращаем на главную');
-        window.location.href = 'index.html';
+        // Очищаем sessionStorage от lobby_id
+        sessionStorage.removeItem('currentLobbyId');
+        window.location.replace('index.html'); // Используем replace вместо href
         return;
     }
     
@@ -54,8 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (!userData || !userData.lobby_id || userData.lobby_id === 0) {
                 console.log('ℹ️ Пользователь не в лобби, возвращаем на главную');
+                // Очищаем sessionStorage от lobby_id, чтобы предотвратить цикл
+                sessionStorage.removeItem('currentLobbyId');
                 if (!isExiting) {
-                    window.location.href = 'index.html';
+                    window.location.replace('index.html'); // Используем replace вместо href, чтобы не создавать историю
                 }
                 return;
             }
@@ -66,8 +70,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Проверяем, что lobby_id не равен 0
             if (lobbyIdStr === '0' || parseInt(lobbyIdStr) === 0) {
                 console.log('ℹ️ Пользователь не в лобби (lobby_id = 0), возвращаем на главную');
+                // Очищаем sessionStorage от lobby_id, чтобы предотвратить цикл
+                sessionStorage.removeItem('currentLobbyId');
                 if (!isExiting) {
-                    window.location.href = 'index.html';
+                    window.location.replace('index.html'); // Используем replace вместо href, чтобы не создавать историю
                 }
                 return;
             }
@@ -2794,16 +2800,25 @@ async function exitFromLobby() {
         sessionStorage.setItem(`exitCount_${currentUserId}`, (currentExitCount + 1).toString());
         console.log('🔄 Счетчик выходов увеличен, параметр "Пол и возраст" будет сброшен при следующем входе');
         
+        // Очищаем все данные перед редиректом
+        sessionStorage.removeItem('currentLobbyId');
+        currentLobbyId = null;
+        currentUserId = null;
+        
         // Небольшая задержка перед редиректом
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Возвращаемся на главную страницу
-        window.location.href = 'index.html';
+        // Возвращаемся на главную страницу (используем replace, чтобы не создавать историю)
+        window.location.replace('index.html');
         
     } catch (err) {
         console.error('Ошибка выхода из лобби:', err);
+        // Очищаем данные даже при ошибке
+        sessionStorage.removeItem('currentLobbyId');
+        currentLobbyId = null;
+        currentUserId = null;
         // В случае ошибки всё равно возвращаемся на главную
-        window.location.href = 'index.html';
+        window.location.replace('index.html');
     }
 }
 
