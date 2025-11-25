@@ -954,6 +954,11 @@ body {
     min-height: 450px;
 }
 
+/* Отступ для блоков под карточкой бункера */
+.bunker-secret-block {
+    margin-top: 1.5rem;
+}
+
 /* Блок с игроками */
 .players-block {
     min-height: 900px;
@@ -1943,11 +1948,16 @@ body {
     }
     
     .bunker-card-block {
-        min-height: 400px;
+        min-height: 550px; /* Увеличено на 50px для FULL HD */
     }
     
     .bunker-card-block .game-block-content {
-        min-height: 350px;
+        min-height: 500px; /* Увеличено на 50px для FULL HD */
+    }
+    
+    /* Отступ для блоков под карточкой бункера для FULL HD */
+    .bunker-secret-block {
+        margin-top: 1.5rem;
     }
 }
 
@@ -2042,6 +2052,19 @@ body {
         visibility: visible !important;
     }
     
+    /* Увеличение высоты карточки бункера для FULL HD */
+    .game-layout .game-right-column > .flip-card:first-child {
+        min-height: 550px !important; /* Увеличено на 50px для FULL HD */
+    }
+    
+    .game-layout .game-right-column .bunker-card-block {
+        min-height: 550px !important; /* Увеличено на 50px для FULL HD */
+    }
+    
+    .game-layout .game-right-column .bunker-card-block .game-block-content {
+        min-height: 500px !important; /* Увеличено на 50px для FULL HD */
+    }
+    
     /* Специфично для первого и второго flip-card */
     .game-layout .game-right-column > .flip-card:first-child,
     .game-layout .game-right-column > .flip-card:nth-child(2) {
@@ -2050,10 +2073,10 @@ body {
         max-width: 100% !important;
     }
     
-    /* Секретная информация бункера - отступ 50px от карточки бункера */
+    /* Секретная информация бункера - отступ от карточки бункера */
     /* Второй flip-card в правой колонке (секретная информация) */
     .game-layout .game-right-column .flip-card:nth-child(2) {
-        margin-top: 50px !important;
+        margin-top: 1.5rem !important;
         position: relative;
         z-index: 2;
     }
@@ -2370,11 +2393,16 @@ body {
     }
     
     .bunker-card-block {
-        min-height: 550px;
+        min-height: 650px; /* Увеличено на 100px для 2K */
     }
     
     .bunker-card-block .game-block-content {
-        min-height: 500px;
+        min-height: 600px; /* Увеличено на 100px для 2K */
+    }
+    
+    /* Отступ для блоков под карточкой бункера для 2K */
+    .bunker-secret-block {
+        margin-top: 1.5rem;
     }
     
     /* Оптимизация layout для 2K экранов */
@@ -2416,6 +2444,24 @@ body {
     .game-right-column {
         width: 500px;
         min-width: 400px;
+    }
+    
+    /* Увеличение высоты карточки бункера для 2K */
+    .game-right-column > .flip-card:first-child {
+        min-height: 650px !important; /* Увеличено на 100px для 2K */
+    }
+    
+    .game-right-column .bunker-card-block {
+        min-height: 650px !important; /* Увеличено на 100px для 2K */
+    }
+    
+    .game-right-column .bunker-card-block .game-block-content {
+        min-height: 600px !important; /* Увеличено на 100px для 2K */
+    }
+    
+    /* Отступ для блоков под карточкой бункера для 2K */
+    .game-right-column .flip-card:nth-child(2) {
+        margin-top: 1.5rem !important;
     }
     
     /* Вернуть исходные стили для блоков в правой колонке */
