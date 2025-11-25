@@ -1106,9 +1106,13 @@ body {
     }
 }
 
-.player-card-static {
+.player-card-flip {
     cursor: default;
     pointer-events: auto;
+}
+
+.player-card-flip .flip-card-inner {
+    pointer-events: none;
 }
 
 .player-card-block {

@@ -1536,21 +1536,26 @@ async function loadPlayersInfo() {
                 // можно было найти и обновить элементы в карточках других игроков
                 // player.id - это ID игрока, чья карточка отображается в этой карточке
                 return `
-                    <div class="player-card-static" style="min-height: 900px; width: 468px; flex-shrink: 0;" data-player-id="${player.id}">
-                        <div class="game-block player-card-block">
-                            <div class="game-block-header">
-                                <h2 class="game-block-title">${playerName}</h2>
+                    <div class="flip-card player-card-flip" style="min-height: 900px; width: 468px; flex-shrink: 0;" data-player-id="${player.id}">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front game-block player-card-block">
+                                <div class="game-block-header">
+                                    <h2 class="game-block-title">${playerName}</h2>
+                                </div>
+                                <div class="game-block-content player-card-info">
+                                    ${generatePlayerInfoItem('genderAge', 'Пол и возраст', playerData.genderAge, player.id)}
+                                    ${generatePlayerInfoItem('profession', 'Профессия', playerData.profession, player.id)}
+                                    ${generatePlayerInfoItem('health', 'Состояние здоровья', playerData.health, player.id)}
+                                    ${generatePlayerInfoItem('hobby', 'Хобби', playerData.hobby, player.id)}
+                                    ${generatePlayerInfoItem('phobia', 'Фобия', playerData.phobia, player.id)}
+                                    ${generatePlayerInfoItem('fact1', 'Факт №1', playerData.fact1, player.id)}
+                                    ${generatePlayerInfoItem('fact2', 'Факт №2', playerData.fact2, player.id)}
+                                    ${generatePlayerInfoItem('action1', 'Карточка действия №1', playerData.action1, player.id)}
+                                    ${generatePlayerInfoItem('action2', 'Карточка действия №2', playerData.action2, player.id)}
+                                </div>
                             </div>
-                            <div class="game-block-content player-card-info">
-                                ${generatePlayerInfoItem('genderAge', 'Пол и возраст', playerData.genderAge, player.id)}
-                                ${generatePlayerInfoItem('profession', 'Профессия', playerData.profession, player.id)}
-                                ${generatePlayerInfoItem('health', 'Состояние здоровья', playerData.health, player.id)}
-                                ${generatePlayerInfoItem('hobby', 'Хобби', playerData.hobby, player.id)}
-                                ${generatePlayerInfoItem('phobia', 'Фобия', playerData.phobia, player.id)}
-                                ${generatePlayerInfoItem('fact1', 'Факт №1', playerData.fact1, player.id)}
-                                ${generatePlayerInfoItem('fact2', 'Факт №2', playerData.fact2, player.id)}
-                                ${generatePlayerInfoItem('action1', 'Карточка действия №1', playerData.action1, player.id)}
-                                ${generatePlayerInfoItem('action2', 'Карточка действия №2', playerData.action2, player.id)}
+                            <div class="flip-card-back">
+                                <img src="bunker-logo.png" alt="BUNKER THE BOARD GAME" class="bunker-logo">
                             </div>
                         </div>
                     </div>
@@ -1559,9 +1564,35 @@ async function loadPlayersInfo() {
             
             playersContent.innerHTML = `<div class="players-list">${otherPlayersHTML}</div>`;
             
-            // Генерируем данные для элементов других игроков, у которых blur уже снят
+            // Применяем состояние блокировки к карточкам других игроков
             // Используем небольшую задержку, чтобы DOM успел обновиться
-            setTimeout(() => {
+            setTimeout(async () => {
+                // Получаем текущее состояние блокировки из БД
+                const { data: lobbyData } = await supabase
+                    .from('lobbies')
+                    .select('cards_locked, bunker_card_data')
+                    .eq('lobby_id', parseInt(currentLobbyId))
+                    .maybeSingle();
+                
+                if (lobbyData) {
+                    const isLocked = lobbyData?.cards_locked !== false;
+                    // Применяем состояние только к карточкам других игроков (не трогаем bunker_card_data)
+                    const allFlipCards = document.querySelectorAll('.player-card-flip');
+                    allFlipCards.forEach(flipCard => {
+                        const flipCardInner = flipCard.querySelector('.flip-card-inner');
+                        if (!flipCardInner) return;
+                        
+                        if (isLocked) {
+                            flipCardInner.classList.add('flipped');
+                            flipCard.classList.add('cards-locked');
+                        } else {
+                            flipCardInner.classList.remove('flipped');
+                            flipCard.classList.remove('cards-locked');
+                        }
+                    });
+                }
+                
+                // Генерируем данные для элементов других игроков, у которых blur уже снят
                 restoreUnblurredData();
             }, 100);
         }
@@ -2922,8 +2953,8 @@ function setupFlipCards() {
             currentElement = currentElement.parentElement;
         }
         
-        // Пропускаем клики на статичные карточки других игроков
-        if (e.target.closest('.player-card-static')) {
+        // Пропускаем клики на карточки других игроков (они переворачиваются только программно)
+        if (e.target.closest('.player-card-flip')) {
             return;
         }
         
