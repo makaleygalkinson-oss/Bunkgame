@@ -2899,15 +2899,32 @@ function unsubscribeFromPlayersUpdates() {
 // Настройка переворота карточек
 function setupFlipCards() {
     // Используем делегирование событий для всех карточек
+    // Используем capture phase = false, чтобы blur обработчик сработал первым
     document.addEventListener('click', (e) => {
-        // Пропускаем клики на кнопки переключения blur
-        if (e.target.closest('.blur-toggle-btn')) {
+        // Пропускаем клики на кнопки переключения blur (проверяем и target, и все элементы в цепочке)
+        const blurButton = e.target.closest('.blur-toggle-btn');
+        if (blurButton || e.target.classList.contains('blur-toggle-btn')) {
             return;
         }
         
         // Пропускаем клики на кнопки обновления
-        if (e.target.closest('.refresh-btn')) {
+        const refreshButton = e.target.closest('.refresh-btn');
+        if (refreshButton || e.target.classList.contains('refresh-btn')) {
             return;
+        }
+        
+        // Пропускаем клики на любые кнопки внутри карточки
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+            return;
+        }
+        
+        // Дополнительная проверка: если клик произошел внутри элемента с классом blur-toggle-btn
+        let currentElement = e.target;
+        while (currentElement && currentElement !== document.body) {
+            if (currentElement.classList && currentElement.classList.contains('blur-toggle-btn')) {
+                return;
+            }
+            currentElement = currentElement.parentElement;
         }
         
         const flipCard = e.target.closest('.flip-card');
@@ -2933,7 +2950,7 @@ function setupFlipCards() {
                 flipCardInner.classList.toggle('flipped');
             }
         }
-    });
+    }, false); // Явно указываем bubble phase, чтобы blur обработчик (capture) сработал первым
 }
 
 // Выход из лобби
