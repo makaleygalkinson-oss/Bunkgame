@@ -1098,23 +1098,6 @@ async function loadVoting() {
     if (!votingContent) return;
     
     try {
-        // Получаем список всех игроков в лобби
-        const { data: players, error: playersError } = await supabase
-            .from('users')
-            .select('id, name, email')
-            .eq('lobby_id', parseInt(currentLobbyId));
-        
-        if (playersError) {
-            console.error('Ошибка загрузки игроков для голосования:', playersError);
-            votingContent.innerHTML = '<p class="game-error">Ошибка загрузки игроков</p>';
-            return;
-        }
-        
-        if (!players || players.length === 0) {
-            votingContent.innerHTML = '<p>Нет игроков в лобби</p>';
-            return;
-        }
-        
         // Загружаем все голоса из БД
         const { data: lobbyData, error: votesError } = await supabase
             .from('lobbies')
@@ -1130,57 +1113,62 @@ async function loadVoting() {
             console.error('Ошибка загрузки голосов из БД:', votesError);
         }
         
-        // Создаем список игроков с кружочками для всех голосующих
-        const votingHTML = players.map(player => {
-            const playerName = player.name || player.email || 'Неизвестный';
-            const playerColor = getPlayerColor(player.id);
-            
-            // Находим всех, кто проголосовал за этого игрока
-            // Сравниваем ID как строки для надежности
-            const votesForPlayer = Object.entries(allVotes)
-                .filter(([voterId, voteData]) => {
-                    if (!voteData || !voteData.targetId) {
-                        return false;
-                    }
-                    // Нормализуем ID для сравнения (приводим к строкам)
-                    const targetIdNormalized = String(voteData.targetId).trim();
-                    const playerIdNormalized = String(player.id).trim();
-                    return targetIdNormalized === playerIdNormalized;
-                })
-                .map(([voterId, voteData]) => {
-                    // Нормализуем voterId для получения цвета
-                    const normalizedVoterId = voterId.trim();
-                    return {
-                        voterId: normalizedVoterId,
-                        voterName: voteData.voterName || 'Неизвестный',
-                        firstLetter: voteData.firstLetter || '●',
-                        voterColor: getPlayerColor(normalizedVoterId)
-                    };
-                });
-            
-            // Логирование для отладки (можно убрать в production)
-            if (votesForPlayer.length > 0) {
-                console.log(`Игрок ${playerName} (${player.id}): ${votesForPlayer.length} голосов`);
-            }
-            
-            // Создаем HTML для кружочков
-            const circlesHTML = votesForPlayer.map(vote => {
-                return `<span class="voting-circle" style="color: ${vote.voterColor}; background-color: ${vote.voterColor}20; border: 2px solid ${vote.voterColor};" title="${vote.voterName}">${vote.firstLetter}</span>`;
-            }).join('');
-            
-            return `
-                <div class="voting-item">
-                    <span class="voting-player-name" style="color: ${playerColor};">${playerName}</span>
+        // Получаем список всех игроков для получения их имен (для отображения в title)
+        const { data: players, error: playersError } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .eq('lobby_id', parseInt(currentLobbyId));
+        
+        // Создаем карту имен игроков для быстрого доступа
+        const playersMap = {};
+        if (players && !playersError) {
+            players.forEach(player => {
+                playersMap[player.id] = player.name || player.email || 'Неизвестный';
+            });
+        }
+        
+        // Собираем все голоса в один массив (каждый голос - отдельный элемент)
+        const allVotesArray = Object.entries(allVotes)
+            .filter(([voterId, voteData]) => {
+                // Проверяем, что голос валидный
+                return voteData && voteData.targetId && voteData.voterName;
+            })
+            .map(([voterId, voteData]) => {
+                // Нормализуем voterId для получения цвета
+                const normalizedVoterId = String(voterId).trim();
+                const targetId = String(voteData.targetId).trim();
+                const targetName = playersMap[targetId] || 'Неизвестный';
+                
+                return {
+                    voterId: normalizedVoterId,
+                    voterName: voteData.voterName || 'Неизвестный',
+                    targetName: targetName,
+                    firstLetter: voteData.firstLetter || '●',
+                    voterColor: getPlayerColor(normalizedVoterId)
+                };
+            });
+        
+        console.log('📊 Всего голосов:', allVotesArray.length);
+        
+        // Создаем HTML для всех кружочков (горизонтально)
+        const circlesHTML = allVotesArray.map(vote => {
+            return `<span class="voting-circle" style="color: ${vote.voterColor}; background-color: ${vote.voterColor}20; border: 2px solid ${vote.voterColor};" title="${vote.voterName} → ${vote.targetName}">${vote.firstLetter}</span>`;
+        }).join('');
+        
+        // Если нет голосов, показываем сообщение
+        if (allVotesArray.length === 0) {
+            votingContent.innerHTML = `
+                <div class="voting-list">
+                    <p style="color: #808080; text-align: center; padding: 2rem;">Нет голосов</p>
+                </div>
+            `;
+        } else {
+            votingContent.innerHTML = `
+                <div class="voting-list">
                     ${circlesHTML}
                 </div>
             `;
-        }).join('');
-        
-        votingContent.innerHTML = `
-            <div class="voting-list">
-                ${votingHTML}
-            </div>
-        `;
+        }
         
     } catch (err) {
         console.error('Ошибка загрузки голосования:', err);

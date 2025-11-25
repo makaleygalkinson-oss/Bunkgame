@@ -1260,8 +1260,11 @@ body {
 .voting-list {
     padding: 1.5rem;
     display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: flex-start;
 }
 
 .voting-item {
@@ -1319,11 +1322,11 @@ body {
     border-radius: 50%;
     font-size: 0.9rem;
     font-weight: 700;
-    margin-left: 0.5rem;
     color: inherit;
     background-color: inherit;
     border: inherit;
     text-transform: uppercase;
+    flex-shrink: 0;
 }
 
 /* Модальное окно голосования */
@@ -2243,7 +2246,9 @@ body {
     
     /* Голосование */
     .voting-list {
-        gap: 1.2rem;
+        gap: 1rem;
+        flex-direction: row;
+        flex-wrap: wrap;
     }
     
     .voting-item {
@@ -2401,6 +2406,8 @@ body {
     
     .voting-list {
         text-align: left;
+        flex-direction: row;
+        flex-wrap: wrap;
     }
     
     .voting-item {
