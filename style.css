@@ -764,7 +764,7 @@ body {
         flex-direction: column;
         gap: 1.5rem;
         flex: 0 0 auto;
-        width: 350px;
+        width: 400px; /* Увеличено на 50px для FULL HD */
         min-width: 300px;
     }
     
@@ -1268,10 +1268,9 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
-    background: rgba(50, 50, 50, 0.6);
-    border-radius: 8px;
-    border: 1px solid rgba(150, 150, 150, 0.2);
+    padding: 0;
+    background: transparent;
+    border: none;
     gap: 1rem;
 }
 
@@ -1288,6 +1287,7 @@ body {
     color: #d0d0d0;
     font-size: 1rem;
     font-weight: 600;
+    margin-left: 5px;
 }
 
 .voting-btn {
@@ -1324,10 +1324,10 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
+    width: 1.5rem;
+    height: 1.5rem;
     border-radius: 50%;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: inherit;
     background-color: inherit;
@@ -2275,9 +2275,9 @@ body {
     }
     
     .voting-item {
-        padding: 1.2rem 1.5rem;
-        font-size: 1.1rem;
-        border-radius: 12px;
+        padding: 0;
+        background: transparent;
+        border: none;
     }
     
     .vote-btn {
@@ -2366,7 +2366,7 @@ body {
     
     /* Вернуть исходные ширины для 2K */
     .game-left-column {
-        width: 350px;
+        width: 450px; /* Увеличено на 100px для 2K */
         min-width: 300px;
     }
     
@@ -2436,6 +2436,9 @@ body {
         text-align: left;
         justify-content: space-between;
         flex-wrap: wrap;
+        padding: 0;
+        background: transparent;
+        border: none;
     }
     
     .voting-circles-container {
