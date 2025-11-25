@@ -640,7 +640,7 @@ async function startGame() {
             console.error('Ошибка загрузки состояния карточек:', fetchError);
             if (startGameBtn) {
                 startGameBtn.disabled = false;
-                startGameBtn.textContent = 'Start Game';
+                updateStartGameButtonText(true); // По умолчанию заблокированы
             }
             return;
         }
@@ -664,7 +664,7 @@ async function startGame() {
                 console.error('Ошибка загрузки игроков для старта игры:', playersError);
                 if (startGameBtn) {
                     startGameBtn.disabled = false;
-                    startGameBtn.textContent = 'Start Game';
+                    updateStartGameButtonText(true); // По умолчанию заблокированы
                 }
                 return;
             }
@@ -697,7 +697,7 @@ async function startGame() {
             alert('Ошибка сохранения данных. Попробуйте еще раз.');
             if (startGameBtn) {
                 startGameBtn.disabled = false;
-                startGameBtn.textContent = 'Start Game';
+                updateStartGameButtonText(true); // По умолчанию заблокированы
             }
             return;
         }
@@ -707,9 +707,11 @@ async function startGame() {
         // Применяем состояние к карточкам
         await applyCardsLockState(newLocked, bunkerCardData);
         
+        // Обновляем текст кнопки в зависимости от состояния
+        updateStartGameButtonText(newLocked);
+        
         if (startGameBtn) {
             startGameBtn.disabled = false;
-            startGameBtn.textContent = 'Start Game';
         }
         
     } catch (err) {
@@ -718,8 +720,16 @@ async function startGame() {
         const startGameBtn = document.getElementById('startGameBtn');
         if (startGameBtn) {
             startGameBtn.disabled = false;
-            startGameBtn.textContent = 'Start Game';
+            updateStartGameButtonText(true); // По умолчанию заблокированы
         }
+    }
+}
+
+// Обновление текста кнопки в зависимости от состояния блокировки
+function updateStartGameButtonText(isLocked) {
+    const startGameBtn = document.getElementById('startGameBtn');
+    if (startGameBtn) {
+        startGameBtn.textContent = isLocked ? 'START GAME' : 'END GAME';
     }
 }
 
@@ -774,6 +784,9 @@ async function checkAndApplyCardsLockState() {
         
         // Применяем состояние
         await applyCardsLockState(isLocked, lobbyData?.bunker_card_data);
+        
+        // Обновляем текст кнопки
+        updateStartGameButtonText(isLocked);
         
     } catch (err) {
         console.error('Ошибка проверки состояния карточек:', err);
@@ -2649,6 +2662,9 @@ function subscribeToBlurUpdates() {
                     
                     // Применяем состояние блокировки к карточкам
                     applyCardsLockState(cardsLocked, bunkerCardData);
+                    
+                    // Обновляем текст кнопки
+                    updateStartGameButtonText(cardsLocked);
                     
                     console.log('✅ Состояние блокировки карточек обновлено через realtime');
                 }
