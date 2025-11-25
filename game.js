@@ -3088,14 +3088,8 @@ async function removeInactivePlayer(playerId) {
         // Удаляем голоса этого игрока из голосования
         await removePlayerVotes(playerId);
         
-        // Обновляем список игроков и голосование для текущих игроков
-        await loadPlayersInfo();
+        // Обновляем только голосование (блок других игроков обновляется через realtime)
         await loadVoting();
-        
-        // Восстанавливаем данные для элементов, у которых blur уже снят
-        setTimeout(() => {
-            restoreUnblurredData();
-        }, 100);
         
     } catch (err) {
         console.error('Ошибка удаления неактивного игрока:', err);
