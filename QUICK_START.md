@@ -8,19 +8,28 @@
 
 ## Шаг 2: Локальная разработка
 
-```bash
-# Установка зависимостей
-npm install
+**Подробная инструкция:** См. [LOCAL_DEVELOPMENT.md](./LOCAL_DEVELOPMENT.md)
 
-# Создайте .env.local файл
-echo "NEXT_PUBLIC_SUPABASE_URL=ваш_url" > .env.local
-echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=ваш_ключ" >> .env.local
+### Кратко:
 
-# Запуск dev сервера
-npm run dev
-```
+1. **Откройте терминал** в папке проекта
+2. **Установите зависимости:**
+   ```bash
+   npm install
+   ```
 
-Откройте [http://localhost:3000](http://localhost:3000)
+3. **Создайте файл `.env.local`** в корне проекта:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=ваш_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=ваш_ключ
+   ```
+
+4. **Запустите dev сервер:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Откройте браузер:** [http://localhost:3000](http://localhost:3000)
 
 ## Шаг 3: Деплой на Vercel
 
